@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: azure-search-openai-javascript
+metadata:
+  template: azure-search-openai-javascript@1.0.0
+
+services:
+  webapp:
+    project: ./packages/webapp
+    dist: dist
+    language: ts
+    host: staticwebapp
+    hooks:
+      predeploy:
+        windows:
+          shell: pwsh
+          run: npm run build
+          interactive: true
+          continueOnError: false
+        posix:
+          shell: sh
+          run: export SEARCH_API_URI && npm run build
+          interactive: true
+          continueOnError: false
+
+  search:
+    project: ./packages/search
+    language: ts
+    host: containerapp
+    docker:
+      context: ../..
+
+  indexer:
+    project: ./packages/indexer
+    language: ts
+    host: containerapp
+    docker:
+      context: ../..
+
+hooks:
+  postup:
+    windows:
+      shell: pwsh
+      run: ./scripts/index-data.ps1
+      interactive: true
+      continueOnError: false
+    posix:
+      shell: sh
+      run: ./scripts/index-data.sh
+      interactive: true
+      continueOnError: false

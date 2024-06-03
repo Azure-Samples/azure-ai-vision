@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start app",
+      "type": "shell",
+      "command": "npm",
+      "args": ["start"],
+      "presentation": {
+        "reveal": "always"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "dotEnvFilePath",
+      "type": "command",
+      "command": "azure-dev.commands.getDotEnvFilePath"
+    }
+  ]
+}

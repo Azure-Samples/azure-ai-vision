@@ -1,0 +1,92 @@
+##################################################################
+# VS Code with REST Client extension is needed to use this file.
+# Download at: https://aka.ms/vscode/rest-client
+##################################################################
+
+@api_host = http://localhost:3000
+
+# Get file content
+GET {{api_host}}/content/terms-of-service.md
+
+###
+
+# Chat with the bot
+POST {{api_host}}/chat
+Content-Type: application/json
+
+{
+  "messages": [{
+    "content": "How to search and book rentals?",
+    "role": "user"
+  }],
+  "context": {
+    "approach":"rrr",
+    "retrieval_mode": "hybrid",
+    "semantic_ranker": true,
+    "semantic_captions": false,
+    "top": 3,
+    "suggest_followup_questions": false
+  }
+}
+
+###
+
+# Chat with the bot using streaming
+POST {{api_host}}/chat
+Content-Type: application/json
+
+{
+  "messages": [{
+    "content": "How to search and book rentals?",
+    "role": "user"
+  }],
+  "stream": true,
+  "context": {
+    "approach":"rrr",
+    "retrieval_mode": "hybrid",
+    "semantic_ranker": true,
+    "semantic_captions": false,
+    "top": 3,
+    "suggest_followup_questions": true
+  }
+}
+
+###
+
+# Ask a question using the rtr approach
+POST {{api_host}}/ask
+Content-Type: application/json
+
+{
+  "messages": [{
+    "content": "What is the refund policy?",
+    "role": "user"
+  }],
+  "context": {
+    "approach":"rtr",
+    "retrieval_mode": "hybrid",
+    "semantic_ranker": true,
+    "semantic_captions": false,
+    "top": 3
+  }
+}
+
+###
+
+# Ask a question using the rrr approach
+POST {{api_host}}/ask
+Content-Type: application/json
+
+{
+  "messages": [{
+    "content": "How to contact a representative?",
+    "role": "user"
+  }],
+  "context": {
+    "approach":"rrr",
+    "retrieval_mode": "hybrid",
+    "semantic_ranker": true,
+    "semantic_captions": false,
+    "top": 3
+  }
+}
