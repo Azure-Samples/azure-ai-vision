@@ -5,7 +5,7 @@ This sample demonstrates how to create and manage face collections, add faces, a
 
 ### Key Features
 
-* Learn how to use the Azure Face API to detect faces and retrieve bounding box and face ID.
+* Learn how to use the Azure Face API to detect faces, retrieve bounding box and face ID.
 * Create and manage face collections, including face lists and person groups.
 * Add detected faces to collections more successfully and reduce errors.
 * Verify faces by comparing detected faces or face IDs with existing images/collections.
