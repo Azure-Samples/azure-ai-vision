@@ -1,5 +1,0 @@
-# Other packages needed to run the notebook samples
-azure-ai-vision-face
-azure-core
-Pillow
-requests
