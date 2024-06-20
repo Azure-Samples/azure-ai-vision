@@ -3,9 +3,9 @@
 
 The sample demonstrates how to make a portrait image out of an original image by using Azure Face API and Azure Background Removal API, as illustrated below:
 
-| Input | Matting | Portrait |
+| Input Image | Output Portrait | (Intermediate) Output Matting |
 | :-: | :-: | :-: |
-| ![detection2.jpg](https://raw.githubusercontent.com/Azure-Samples/cognitive-services-sample-data-files/master/Face/images/detection2.jpg) | ![matting.bmp](matting.bmp) | ![portrait.png](portrait.png) |
+| ![detection2.jpg](https://raw.githubusercontent.com/Azure-Samples/cognitive-services-sample-data-files/master/Face/images/detection2.jpg) | ![portrait.png](portrait.png) | ![matting.bmp](matting.bmp) |
 
 
 ### Key Features
@@ -18,12 +18,7 @@ The sample demonstrates how to make a portrait image out of an original image by
 
 ### Steps Involved
 
-1. Download an image from web URL.
-2. Resize image and compress as JPEG memory stream.
-3. Detect faces in the image.
-4. Read the returned facial attributes.
-5. Optionally, check whether the face quality is suitable for portrait processing.
-6. Crop the face out from the image.
-7. Request for foreground matting of the face crop.
-8. Merge the matting as the alpha channel of the face crop.
-9. All done. Portrait generated.
+1. Download an image from web URL. Resize and compress as JPEG memory stream.
+2. Detect faces in the stream, and read the returned facial attributes. Optionally, check whether the face quality is suitable for portrait processing.
+3. Crop the face out from the image, and request for foreground matting of the focused area.
+4. Compose the transparent background portrait using the alpha matting and the face crop.
