@@ -2,7 +2,7 @@ package com.contoso.facetutorial;
 
 // <snippet_imports>
 import java.io.*;
-import java.lang.Object.*;
+import java.util.*;
 import android.app.*;
 import android.content.*;
 import android.net.*;
@@ -14,8 +14,10 @@ import android.provider.*;
 // </snippet_imports>
 
 // <snippet_face_imports>
-import com.microsoft.projectoxford.face.*;
-import com.microsoft.projectoxford.face.contract.*;
+import com.azure.ai.vision.face.*;
+import com.azure.ai.vision.face.models.*;
+import com.azure.core.credential.*;
+import com.azure.core.util.*;
 // </snippet_face_imports>
 
 public class MainActivity extends Activity {
@@ -25,8 +27,10 @@ public class MainActivity extends Activity {
     // Add your Face subscription key to your environment variables.
     private final String subscriptionKey = System.getenv("FACE_SUBSCRIPTION_KEY");
 
-    private final FaceServiceClient faceServiceClient =
-            new FaceServiceRestClient(apiEndpoint, subscriptionKey);
+    private final FaceClient faceServiceClient = new FaceClientBuilder()
+            .endpoint(apiEndpoint)
+            .credential(new AzureKeyCredential(subscriptionKey))
+            .buildClient();
 
     private final int PICK_IMAGE = 1;
     private ProgressDialog detectionProgressDialog;
@@ -78,36 +82,32 @@ public class MainActivity extends Activity {
     private void detectAndFrame(final Bitmap imageBitmap) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         imageBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
-        ByteArrayInputStream inputStream =
-                new ByteArrayInputStream(outputStream.toByteArray());
 
-        AsyncTask<InputStream, String, Face[]> detectTask =
-                new AsyncTask<InputStream, String, Face[]>() {
+        AsyncTask<byte[], String, FaceDetectionResult[]> detectTask =
+                new AsyncTask<byte[], String, FaceDetectionResult[]>() {
                     String exceptionMessage = "";
 
                     @Override
-                    protected Face[] doInBackground(InputStream... params) {
+                    protected FaceDetectionResult[] doInBackground(byte[]... params) {
                         try {
                             publishProgress("Detecting...");
-                            Face[] result = faceServiceClient.detect(
-                                    params[0],
-                                    true,         // returnFaceId
-                                    false,        // returnFaceLandmarks
-                                    null          // returnFaceAttributes:
-                                    /* new FaceServiceClient.FaceAttributeType[] {
-                                        FaceServiceClient.FaceAttributeType.Age,
-                                        FaceServiceClient.FaceAttributeType.Gender }
-                                    */
-                            );
-                            if (result == null){
+                            DetectOptions options = new DetectOptions(
+                                    FaceDetectionModel.DETECTION_03,
+                                    FaceRecognitionModel.RECOGNITION_04,
+                                    false);
+                            options.setReturnFaceLandmarks(true);
+                            List<FaceDetectionResult> result = faceServiceClient.detect(
+                                    BinaryData.fromBytes(params[0]),
+                                    options);
+                            if (result == null || result.isEmpty()){
                                 publishProgress(
                                         "Detection Finished. Nothing detected");
                                 return null;
                             }
                             publishProgress(String.format(
                                     "Detection Finished. %d face(s) detected",
-                                    result.length));
-                            return result;
+                                    result.size()));
+                            return result.stream().toArray(FaceDetectionResult[]::new);
                         } catch (Exception e) {
                             exceptionMessage = String.format(
                                     "Detection failed: %s", e.getMessage());
@@ -126,7 +126,7 @@ public class MainActivity extends Activity {
                         detectionProgressDialog.setMessage(progress[0]);
                     }
                     @Override
-                    protected void onPostExecute(Face[] result) {
+                    protected void onPostExecute(FaceDetectionResult[] result) {
                         //TODO: update face frames
                         detectionProgressDialog.dismiss();
 
@@ -136,13 +136,14 @@ public class MainActivity extends Activity {
                         if (result == null) return;
 
                         ImageView imageView = findViewById(R.id.imageView1);
-                        imageView.setImageBitmap(
-                                drawFaceRectanglesOnBitmap(imageBitmap, result));
+                        Bitmap addRectangles = drawFaceRectanglesOnBitmap(imageBitmap, result);
+                        Bitmap addLandmarks = drawFaceLandmarksOnBitmap(addRectangles, result);
+                        imageView.setImageBitmap(addLandmarks);
                         imageBitmap.recycle();
                     }
                 };
 
-        detectTask.execute(inputStream);
+        detectTask.execute(outputStream.toByteArray());
     }
 
     private void showError(String message) {
@@ -158,7 +159,7 @@ public class MainActivity extends Activity {
 
     // <snippet_drawrectangles>
     private static Bitmap drawFaceRectanglesOnBitmap(
-            Bitmap originalBitmap, Face[] faces) {
+            Bitmap originalBitmap, FaceDetectionResult[] faces) {
         Bitmap bitmap = originalBitmap.copy(Bitmap.Config.ARGB_8888, true);
         Canvas canvas = new Canvas(bitmap);
         Paint paint = new Paint();
@@ -167,17 +168,52 @@ public class MainActivity extends Activity {
         paint.setColor(Color.RED);
         paint.setStrokeWidth(10);
         if (faces != null) {
-            for (Face face : faces) {
-                FaceRectangle faceRectangle = face.faceRectangle;
+            for (FaceDetectionResult face : faces) {
+                FaceRectangle faceRectangle = face.getFaceRectangle();
                 canvas.drawRect(
-                        faceRectangle.left,
-                        faceRectangle.top,
-                        faceRectangle.left + faceRectangle.width,
-                        faceRectangle.top + faceRectangle.height,
+                        faceRectangle.getLeft(),
+                        faceRectangle.getTop(),
+                        faceRectangle.getLeft() + faceRectangle.getWidth(),
+                        faceRectangle.getTop() + faceRectangle.getHeight(),
                         paint);
             }
         }
         return bitmap;
     }
     // </snippet_drawrectangles>
+
+    // <snippet_drawlandmarks>
+    private static Bitmap drawFaceLandmarksOnBitmap(
+            Bitmap originalBitmap, FaceDetectionResult[] faces) {
+        Bitmap bitmap = originalBitmap.copy(Bitmap.Config.ARGB_8888, true);
+        Canvas canvas = new Canvas(bitmap);
+        Paint paint = new Paint();
+        paint.setAntiAlias(true);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(5);
+        if (faces != null) {
+            for (FaceDetectionResult face : faces) {
+                FaceLandmarks landmarks = face.getFaceLandmarks();
+                paint.setColor(Color.BLUE);
+                canvas.drawCircle(
+                        (float) landmarks.getPupilLeft().getX(),
+                        (float) landmarks.getPupilLeft().getY(),
+                        5F,
+                        paint);
+                canvas.drawCircle(
+                        (float) landmarks.getPupilRight().getX(),
+                        (float) landmarks.getPupilRight().getY(),
+                        5F,
+                        paint);
+                paint.setColor(Color.GREEN);
+                canvas.drawCircle(
+                        (float) landmarks.getNoseTip().getX(),
+                        (float) landmarks.getNoseTip().getY(),
+                        5F,
+                        paint);
+            }
+        }
+        return bitmap;
+    }
+    // </snippet_drawlandmarks>
 }
