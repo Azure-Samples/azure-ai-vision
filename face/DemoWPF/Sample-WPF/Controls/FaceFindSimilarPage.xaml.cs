@@ -45,8 +45,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-using Microsoft.Azure.CognitiveServices.Vision.Face;
-using Microsoft.Azure.CognitiveServices.Vision.Face.Models;
+using Azure;
+using Azure.AI.Vision.Face;
 
 namespace Microsoft.ProjectOxford.Face.Controls
 {
@@ -66,12 +66,12 @@ namespace Microsoft.ProjectOxford.Face.Controls
         /// <summary>
         /// RecognitionModel for Face detection and LargeFaceList
         /// </summary>
-        private static readonly string recognitionModel = RecognitionModel.Recognition02;
+        private static readonly FaceRecognitionModel recognitionModel = FaceRecognitionModel.Recognition04;
 
         /// <summary>
         /// DetectionModel for Face detection
         /// </summary>
-        private static readonly string detectionModel = DetectionModel.Detection02;
+        private static readonly FaceDetectionModel detectionModel = FaceDetectionModel.Detection03;
 
         /// <summary>
         /// Faces collection which will be used to find similar from
@@ -102,11 +102,6 @@ namespace Microsoft.ProjectOxford.Face.Controls
         /// max concurrent process number for client query.
         /// </summary>
         private int _maxConcurrentProcesses;
-
-        /// <summary>
-        /// Temporary stored large face list name
-        /// </summary>
-        private string _largeFaceListName = Guid.NewGuid().ToString();
 
         #endregion Fields
 
@@ -260,7 +255,8 @@ namespace Microsoft.ProjectOxford.Face.Controls
                 {
                     MainWindow.Log("Request: Detecting faces in {0}", SelectedFile);
                     var faceServiceClient = FaceServiceClientHelper.GetInstance(this);
-                    IList<DetectedFace> faces = await faceServiceClient.Face.DetectWithStreamAsync(fStream, recognitionModel: recognitionModel, detectionModel: detectionModel);
+                    Response<IReadOnlyList<FaceDetectionResult>> response = await faceServiceClient.DetectAsync(BinaryData.FromStream(fStream), detectionModel, recognitionModel, true);
+                    IList<FaceDetectionResult> faces = response.Value.ToList();
 
                     // Update detected faces on UI
                     foreach (var face in UIHelper.CalculateFaceRectangleForRendering(faces, MaxImageSize, imageInfo))
@@ -286,11 +282,11 @@ namespace Microsoft.ProjectOxford.Face.Controls
                         {
                             // Default mode, call find matchPerson similar REST API, the result contains all the face ids which is personal similar to the query face
                             const int requestCandidatesCount = 4;
-                            IList<SimilarFace> result = await faceServiceClient.Face.FindSimilarAsync(
+                            Response<IReadOnlyList<FaceFindSimilarResult>> findSimilarResponse = await faceServiceClient.FindSimilarAsync(
                                 faceId,
-                                null,
-                                _largeFaceListName,
+                                FacesCollection.Select(ff => Guid.Parse(ff.FaceId)),
                                 maxNumOfCandidatesReturned: requestCandidatesCount);
+                            IList<FaceFindSimilarResult> result = findSimilarResponse.Value.ToList();
 
                             // Update find matchPerson similar results collection for rendering
                             var personSimilarResult = new FindSimilarResult();
@@ -306,7 +302,7 @@ namespace Microsoft.ProjectOxford.Face.Controls
                             };
                             foreach (var fr in result)
                             {
-                                var candidateFace = FacesCollection.First(ff => ff.FaceId == fr.PersistedFaceId.ToString());
+                                var candidateFace = FacesCollection.First(ff => ff.FaceId == fr.FaceId.ToString());
                                 Face newFace = new Face();
                                 newFace.ImageFile = candidateFace.ImageFile;
                                 newFace.Confidence = fr.Confidence;
@@ -318,21 +314,21 @@ namespace Microsoft.ProjectOxford.Face.Controls
 
                             FindSimilarMatchPersonCollection.Add(personSimilarResult);
                         }
-                        catch (APIErrorException ex)
+                        catch (RequestFailedException ex)
                         {
-                            MainWindow.Log("Response: {0}. {1}", ex.Body.Error.Code, ex.Body.Error.Message);
+                            MainWindow.Log("Response: {0}. {1}", ex.ErrorCode, ex.Message);
                         }
 
                         try
                         {
                             // Call find facial match similar REST API, the result faces the top N with the highest similar confidence 
                             const int requestCandidatesCount = 4;
-                            var result = await faceServiceClient.Face.FindSimilarAsync(
+                            Response<IReadOnlyList<FaceFindSimilarResult>> findSimilarResponse = await faceServiceClient.FindSimilarAsync(
                                 faceId,
-                                null,
-                                _largeFaceListName,
+                                FacesCollection.Select(ff => Guid.Parse(ff.FaceId)),
                                 maxNumOfCandidatesReturned: requestCandidatesCount,
                                 mode: FindSimilarMatchMode.MatchFace);
+                            IList<FaceFindSimilarResult> result = findSimilarResponse.Value.ToList();
 
                             // Update "matchFace" similar results collection for rendering
                             var faceSimilarResults = new FindSimilarResult();
@@ -348,7 +344,7 @@ namespace Microsoft.ProjectOxford.Face.Controls
                             };
                             foreach (var fr in result)
                             {
-                                var candidateFace = FacesCollection.First(ff => ff.FaceId == fr.PersistedFaceId.ToString());
+                                var candidateFace = FacesCollection.First(ff => ff.FaceId == fr.FaceId.ToString());
                                 Face newFace = new Face();
                                 newFace.ImageFile = candidateFace.ImageFile;
                                 newFace.Confidence = fr.Confidence;
@@ -360,9 +356,9 @@ namespace Microsoft.ProjectOxford.Face.Controls
 
                             FindSimilarMatchFaceCollection.Add(faceSimilarResults);
                         }
-                        catch (APIErrorException ex)
+                        catch (RequestFailedException ex)
                         {
-                            MainWindow.Log("Response: {0}. {1}", ex.Body.Error.Code, ex.Body.Error.Message);
+                            MainWindow.Log("Response: {0}. {1}", ex.ErrorCode, ex.Message);
                         }
                     }
                 }
@@ -377,43 +373,7 @@ namespace Microsoft.ProjectOxford.Face.Controls
         /// <param name="e">Event arguments</param>
         private async void FolderPicker_Click(object sender, RoutedEventArgs e)
         {
-            bool groupExists = false;
-
             var faceServiceClient = FaceServiceClientHelper.GetInstance(this);
-            try
-            {
-                MainWindow.Log("Request: Large Face List {0} will be used to build a person database. Checking whether the large face list exists.", _largeFaceListName);
-
-                await faceServiceClient.LargeFaceList.GetAsync(_largeFaceListName);
-                groupExists = true;
-                MainWindow.Log("Response: Large Face List {0} exists.", _largeFaceListName);
-            }
-            catch (APIErrorException ex)
-            {
-                if (ex.Body.Error.Code != "LargeFaceListNotFound")
-                {
-                    MainWindow.Log("Response: {0}. {1}", ex.Body.Error.Code, ex.Body.Error.Message);
-                    return;
-                }
-                else
-                {
-                    MainWindow.Log("Response: Large Face List {0} did not exist previously.", _largeFaceListName);
-                }
-            }
-
-            if (groupExists)
-            {
-                var cleanFaceList = System.Windows.MessageBox.Show(string.Format("Requires a clean up for large face list \"{0}\" before setting up a new large face list. Click OK to proceed, large face list \"{0}\" will be cleared.", _largeFaceListName), "Warning", MessageBoxButton.OKCancel);
-                if (cleanFaceList == MessageBoxResult.OK)
-                {
-                    await faceServiceClient.LargeFaceList.DeleteAsync(_largeFaceListName);
-                }
-                else
-                {
-                    return;
-                }
-            }
-
             OpenFaceButton.IsEnabled = false;
             // Show folder picker
             System.Windows.Forms.FolderBrowserDialog dlg = new System.Windows.Forms.FolderBrowserDialog();
@@ -440,8 +400,6 @@ namespace Microsoft.ProjectOxford.Face.Controls
 
                 MainWindow.Log("Request: Preparing, detecting faces in chosen folder.");
 
-                await faceServiceClient.LargeFaceList.CreateAsync(_largeFaceListName, _largeFaceListName, "large face list for sample", recognitionModel);
-
                 var imageList =
                     new ConcurrentBag<string>(
                         Directory.EnumerateFiles(dlg.SelectedPath, "*.*", SearchOption.AllDirectories)
@@ -460,31 +418,27 @@ namespace Microsoft.ProjectOxford.Face.Controls
                             {
                                 try
                                 {
-                                    var faces =
-                                        await faceServiceClient.LargeFaceList.AddFaceFromStreamAsync(_largeFaceListName, fStream, detectionModel: detectionModel);
-                                    return new Tuple<string, PersistedFace>(imgPath, faces);
+                                    Response<IReadOnlyList<FaceDetectionResult>> response = await faceServiceClient.DetectAsync(BinaryData.FromStream(fStream), detectionModel, recognitionModel, true);
+                                    IList<FaceDetectionResult> faces = response.Value.ToList();
+                                    if (faces.Count == 1)
+                                    {
+                                        return new Tuple<string, FaceDetectionResult>(imgPath, faces.First());
+                                    }
+
+                                    Interlocked.Increment(ref invalidImageCount);
+                                    return new Tuple<string, FaceDetectionResult>(imgPath, null);
                                 }
-                                catch (APIErrorException ex)
+                                catch (RequestFailedException ex)
                                 {
                                     // if operation conflict, retry.
-                                    if (ex.Body.Error.Code.Equals("ConcurrentOperationConflict"))
+                                    if (ex.ErrorCode.Equals("ConcurrentOperationConflict"))
                                     {
                                         imageList.Add(imgPath);
                                         return null;
                                     }
-                                    // if operation cause rate limit exceed, retry.
-                                    else if (ex.Body.Error.Code.Equals("RateLimitExceeded"))
-                                    {
-                                        imageList.Add(imgPath);
-                                        return null;
-                                    }
-                                    else if (ex.Body.Error.Message.Contains("more than 1 face in the image."))
-                                    {
-                                        Interlocked.Increment(ref invalidImageCount);
-                                    }
+
                                     // Here we simply ignore all detection failure in this sample
-                                    // You may handle these exceptions by check the Error.Error.Code and Error.Message property for ClientException object
-                                    return new Tuple<string, PersistedFace>(imgPath, null);
+                                    return new Tuple<string, FaceDetectionResult>(imgPath, null);
                                 }
                             }
                         },
@@ -499,7 +453,7 @@ namespace Microsoft.ProjectOxford.Face.Controls
                             // Update detected faces on UI
                             this.Dispatcher.Invoke(
                             new Action
-                                <ObservableCollection<Face>, string, PersistedFace>(
+                                <ObservableCollection<Face>, string, FaceDetectionResult>(
                                 UIHelper.UpdateFace),
                             FacesCollection,
                             res.Item1,
@@ -533,38 +487,11 @@ namespace Microsoft.ProjectOxford.Face.Controls
                 }
                 if (invalidImageCount > 0)
                 {
-                    MainWindow.Log("Warning: more or less than one face is detected in {0} images, can not add to large face list.", invalidImageCount);
+                    MainWindow.Log("Warning: more or less than one face is detected in {0} images, can not add to collection.", invalidImageCount);
                 }
                 MainWindow.Log("Response: Success. Total {0} faces are detected.", FacesCollection.Count);
 
-                try
-                {
-                    // Start to train the large face list.
-                    MainWindow.Log("Request: Training large face list \"{0}\"", _largeFaceListName);
-                    await faceServiceClient.LargeFaceList.TrainAsync(_largeFaceListName);
-
-                    // Wait until the training is completed.
-                    while (true)
-                    {
-                        await Task.Delay(1000);
-                        var trainingStatus = await faceServiceClient.LargeFaceList.GetTrainingStatusAsync(_largeFaceListName);
-                        MainWindow.Log("Response: {0}. Large face list \"{1}\" training process is {2}", "Success", _largeFaceListName, trainingStatus.Status);
-                        if (trainingStatus.Status != TrainingStatusType.Running)
-                        {
-                            if (trainingStatus.Status == TrainingStatusType.Failed)
-                            {
-                                MainWindow.Log("Response: Training failed with message {0}.", trainingStatus.Message);
-                            }
-
-                            break;
-                        }
-                    }
-                    OpenFaceButton.IsEnabled = true;
-                }
-                catch (APIErrorException ex)
-                {
-                    MainWindow.Log("Response: {0}. {1}", ex.Body.Error.Code, ex.Body.Error.Message);
-                }
+                OpenFaceButton.IsEnabled = true;
             }
 
             GC.Collect();

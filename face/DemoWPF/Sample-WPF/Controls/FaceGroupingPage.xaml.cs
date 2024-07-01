@@ -42,8 +42,8 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
-using Microsoft.Azure.CognitiveServices.Vision.Face;
-using Microsoft.Azure.CognitiveServices.Vision.Face.Models;
+using Azure;
+using Azure.AI.Vision.Face;
 
 namespace Microsoft.ProjectOxford.Face.Controls
 {
@@ -63,12 +63,12 @@ namespace Microsoft.ProjectOxford.Face.Controls
         /// <summary>
         /// RecognitionModel for Face detection
         /// </summary>
-        private static readonly string recognitionModel = RecognitionModel.Recognition02;
+        private static readonly FaceRecognitionModel recognitionModel = FaceRecognitionModel.Recognition04;
 
         /// <summary>
         /// DetectionModel for Face detection
         /// </summary>
-        private static readonly string detectionModel = DetectionModel.Detection02;
+        private static readonly FaceDetectionModel detectionModel = FaceDetectionModel.Detection03;
 
         /// <summary>
         /// Faces to group
@@ -190,20 +190,20 @@ namespace Microsoft.ProjectOxford.Face.Controls
                             {
                                 try
                                 {
-                                    var faces = await faceServiceClient.Face.DetectWithStreamAsync(fStream, recognitionModel: recognitionModel, detectionModel: detectionModel);
-                                    return new Tuple<string, IList<DetectedFace>>(imgPath, faces);
+                                    Response<IReadOnlyList<FaceDetectionResult>> response = await faceServiceClient.DetectAsync(BinaryData.FromStream(fStream), detectionModel, recognitionModel, true);
+                                    IList<FaceDetectionResult> faces = response.Value.ToList();
+                                    return new Tuple<string, IList<FaceDetectionResult>>(imgPath, faces);
                                 }
-                                catch (APIErrorException ex)
+                                catch (RequestFailedException ex)
                                 {
                                     // if operation conflict, retry.
-                                    if (ex.Body.Error.Code.Equals("ConcurrentOperationConflict"))
+                                    if (ex.ErrorCode.Equals("ConcurrentOperationConflict"))
                                     {
                                         imageList.Add(imgPath);
                                         return null;
                                     }
                                     // Here we simply ignore all detection failure in this sample
-                                    // You may handle these exceptions by check the Error.Error.Code and Error.Message property for ClientException object
-                                    return new Tuple<string, IList<DetectedFace>>(imgPath, null);
+                                    return new Tuple<string, IList<FaceDetectionResult>>(imgPath, null);
                                 }
                             }
                         },
@@ -219,7 +219,7 @@ namespace Microsoft.ProjectOxford.Face.Controls
                             foreach (var f in res.Item2)
                             {
                                 this.Dispatcher.Invoke(
-                                    new Action<ObservableCollection<Face>, string, DetectedFace>(UIHelper.UpdateFace),
+                                    new Action<ObservableCollection<Face>, string, FaceDetectionResult>(UIHelper.UpdateFace),
                                     Faces,
                                     res.Item1,
                                     f);
@@ -251,7 +251,8 @@ namespace Microsoft.ProjectOxford.Face.Controls
                    MainWindow.Log("Request: Grouping {0} faces.", Faces.Count);
 
                     // Call grouping, the grouping result is a group collection, each group contains similar faces
-                    var groupRes = await faceServiceClient.Face.GroupAsync(Faces.Select(f => Guid.Parse(f.FaceId)).ToArray());
+                    Response< FaceGroupingResult> groupResponse = await faceServiceClient.GroupAsync(Faces.Select(f => Guid.Parse(f.FaceId)));
+                    FaceGroupingResult groupRes = groupResponse.Value;
 
                     // Update grouping results for rendering
                     foreach (var g in groupRes.Groups)
@@ -290,9 +291,9 @@ namespace Microsoft.ProjectOxford.Face.Controls
 
                     MainWindow.Log("Response: Success. {0} faces are grouped into {1} groups.", Faces.Count, GroupedFaces.Count);
                 }
-                catch (APIErrorException ex)
+                catch (RequestFailedException ex)
                 {
-                    MainWindow.Log("Response: {0}. {1}", ex.Body.Error.Code, ex.Body.Error.Message);
+                    MainWindow.Log("Response: {0}. {1}", ex.ErrorCode, ex.Message);
                 }
             }
             GC.Collect();

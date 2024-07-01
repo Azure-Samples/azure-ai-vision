@@ -39,7 +39,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-using Microsoft.Azure.CognitiveServices.Vision.Face.Models;
+using Azure.AI.Vision.Face;
 
 namespace Microsoft.ProjectOxford.Face.Controls
 {
@@ -106,7 +106,7 @@ namespace Microsoft.ProjectOxford.Face.Controls
         /// <param name="maxSize">Image rendering size</param>
         /// <param name="imageInfo">Image width and height</param>
         /// <returns>Face structure for rendering</returns>
-        public static IEnumerable<Face> CalculateFaceRectangleForRendering(IList<DetectedFace> faces, int maxSize, Tuple<int, int> imageInfo)
+        public static IEnumerable<Face> CalculateFaceRectangleForRendering(IList<FaceDetectionResult> faces, int maxSize, Tuple<int, int> imageInfo)
         {
             var imageWidth = imageInfo.Item1;
             var imageHeight = imageInfo.Item2;
@@ -196,23 +196,7 @@ namespace Microsoft.ProjectOxford.Face.Controls
         /// <param name="collections">UI binding collection</param>
         /// <param name="imagePath">Original image path, used for rendering face region</param>
         /// <param name="face">Face structure returned from service</param>
-        public static void UpdateFace(ObservableCollection<Face> collections, string imagePath, PersistedFace face)
-        {
-            var renderingImage = LoadImageAppliedOrientation(imagePath);
-            collections.Add(new Face()
-            {
-                ImageFile = renderingImage,
-                FaceId = face.PersistedFaceId.ToString(),
-            });
-        }
-
-        /// <summary>
-        /// Append detected face to UI binding collection
-        /// </summary>
-        /// <param name="collections">UI binding collection</param>
-        /// <param name="imagePath">Original image path, used for rendering face region</param>
-        /// <param name="face">Face structure returned from service</param>
-        public static void UpdateFace(ObservableCollection<Face> collections, string imagePath, DetectedFace face)
+        public static void UpdateFace(ObservableCollection<Face> collections, string imagePath, FaceDetectionResult face)
         {
             var renderingImage = LoadImageAppliedOrientation(imagePath);
             collections.Add(new Face()

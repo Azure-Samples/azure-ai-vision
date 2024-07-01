@@ -33,8 +33,6 @@
 
 using System.Windows;
 
-using Microsoft.Azure.CognitiveServices.Vision.Face.Models;
-
 namespace Microsoft.ProjectOxford.Face
 {
     /// <summary>
@@ -63,21 +61,13 @@ namespace Microsoft.ProjectOxford.Face
         /// <param name="e">Event arguments</param>
         private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
-            if (e.Exception is APIErrorException)
+            if (e.Exception.InnerException != null)
             {
-                var ex = e.Exception as APIErrorException;
-                MessageBox.Show(ex.Body.Error.Message, "Face API Calling Error", MessageBoxButton.OK);
+                MessageBox.Show(e.Exception.InnerException.ToString(), "Error", MessageBoxButton.OK);
             }
             else
             {
-                if (e.Exception.InnerException != null)
-                {
-                    MessageBox.Show(e.Exception.InnerException.ToString(), "Error", MessageBoxButton.OK);
-                }
-                else
-                {
-                    MessageBox.Show(e.Exception.ToString(), "Error", MessageBoxButton.OK);
-                }
+                MessageBox.Show(e.Exception.ToString(), "Error", MessageBoxButton.OK);
             }
 
             e.Handled = true;

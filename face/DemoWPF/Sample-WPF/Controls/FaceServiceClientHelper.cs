@@ -31,10 +31,11 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
 using System.Windows;
 using System.Windows.Controls;
-using Microsoft.Azure.CognitiveServices.Vision.Face;
-using Microsoft.Azure.CognitiveServices.Vision.Face.Models;
+using Azure;
+using Azure.AI.Vision.Face;
 
 namespace Microsoft.ProjectOxford.Face.Controls
 {
@@ -72,13 +73,7 @@ namespace Microsoft.ProjectOxford.Face.Controls
             string subscriptionEndpoint = mainWindow._scenariosControl.SubscriptionEndpoint;
             if (subscriptionKey == null || subscriptionEndpoint == null)
             {
-                throw new APIErrorException
-                {
-                    Body = new APIError
-                    {
-                        Error = new Error("Unspecified", "Subscription key or subscription endpoint is null.")
-                    }
-                };
+                throw new ArgumentException("Subscription key or subscription endpoint is null.");
             }
 
             if (_subscriptionKey != subscriptionKey || _subscriptionEndpoint != subscriptionEndpoint || _instance == null)
@@ -87,10 +82,7 @@ namespace Microsoft.ProjectOxford.Face.Controls
                 {
                     if (_subscriptionKey != subscriptionKey || _subscriptionEndpoint != subscriptionEndpoint || _instance == null)
                     {
-                        _instance = new FaceClient(new ApiKeyServiceClientCredentials(subscriptionKey))
-                        {
-                            Endpoint = subscriptionEndpoint
-                        };
+                        _instance = new FaceClient(new Uri(subscriptionEndpoint), new AzureKeyCredential(subscriptionKey));
 
                         _subscriptionKey = subscriptionKey;
                         _subscriptionEndpoint = subscriptionEndpoint;

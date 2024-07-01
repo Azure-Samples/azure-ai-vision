@@ -37,12 +37,13 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-using Microsoft.Azure.CognitiveServices.Vision.Face;
-using Microsoft.Azure.CognitiveServices.Vision.Face.Models;
+using Azure;
+using Azure.AI.Vision.Face;
 
 namespace Microsoft.ProjectOxford.Face.Controls
 {
@@ -62,7 +63,7 @@ namespace Microsoft.ProjectOxford.Face.Controls
         /// <summary>
         /// RecognitionModel for Face detection
         /// </summary>
-        private static readonly string recognitionModel = RecognitionModel.Recognition02;
+        private static readonly FaceRecognitionModel recognitionModel = FaceRecognitionModel.Recognition04;
 
         /// <summary>
         /// Face detection results in list container
@@ -284,22 +285,23 @@ namespace Microsoft.ProjectOxford.Face.Controls
                     try
                     {
                         var faceServiceClient = FaceServiceClientHelper.GetInstance(this);
-                        IList<DetectedFace> faces = await faceServiceClient.Face.DetectWithStreamAsync(
-                            fStream,
-                            false,
-                            true,
-                            new List<FaceAttributeType>()
+                        Response<IReadOnlyList<FaceDetectionResult>> response = await faceServiceClient.DetectAsync(
+                            BinaryData.FromStream(fStream),
+                            FaceDetectionModel.Detection01,
+                            recognitionModel,
+                            returnFaceId: true,
+                            new FaceAttributeType[]
                             {
-                                FaceAttributeType.Accessories,
-                                FaceAttributeType.Blur,
-                                FaceAttributeType.Exposure,
-                                FaceAttributeType.Glasses,
-                                FaceAttributeType.HeadPose,
-                                FaceAttributeType.Noise,
-                                FaceAttributeType.Occlusion,
-                            },
-                            recognitionModel
+                                FaceAttributeType.Detection01.Accessories,
+                                FaceAttributeType.Detection01.Blur,
+                                FaceAttributeType.Detection01.Exposure,
+                                FaceAttributeType.Detection01.Glasses,
+                                FaceAttributeType.Detection01.HeadPose,
+                                FaceAttributeType.Detection01.Noise,
+                                FaceAttributeType.Detection01.Occlusion,
+                            }
                         );
+                        IList<FaceDetectionResult> faces = response.Value.ToList();
 
                         MainWindow.Log("Response: Success. Detected {0} face(s) in {1}", faces.Count, pickedImagePath);
 
@@ -320,7 +322,7 @@ namespace Microsoft.ProjectOxford.Face.Controls
                                 EyeOcclusion = string.Format("EyeOccluded: {0}", ((face.FaceAttributes.Occlusion.EyeOccluded) ? "Yes" : "No")),
                                 ForeheadOcclusion = string.Format("ForeheadOccluded: {0}", (face.FaceAttributes.Occlusion.ForeheadOccluded ? "Yes" : "No")),
                                 MouthOcclusion = string.Format("MouthOccluded: {0}", (face.FaceAttributes.Occlusion.MouthOccluded ? "Yes" : "No")),
-                                Accessories = $"{GetAccessories(face.FaceAttributes.Accessories)}",
+                                Accessories = $"{GetAccessories(face.FaceAttributes.Accessories.ToList())}",
                                 Blur = string.Format("Blur: {0}", face.FaceAttributes.Blur.BlurLevel.ToString()),
                                 Exposure = string.Format("{0}", face.FaceAttributes.Exposure.ExposureLevel.ToString()),
                                 Noise = string.Format("Noise: {0}", face.FaceAttributes.Noise.NoiseLevel.ToString()),
@@ -350,9 +352,9 @@ namespace Microsoft.ProjectOxford.Face.Controls
                             ResultCollection.Add(face);
                         }
                     }
-                    catch (APIErrorException ex)
+                    catch (RequestFailedException ex)
                     {
-                        MainWindow.Log("Response: {0}. {1}", ex.Body.Error.Code, ex.Body.Error.Message);
+                        MainWindow.Log("Response: {0}. {1}", ex.ErrorCode, ex.Message);
                         GC.Collect();
                         return;
                     }
@@ -361,34 +363,7 @@ namespace Microsoft.ProjectOxford.Face.Controls
             }
         }
 
-        private string GetHair(Hair hair)
-        {
-            if (hair.HairColor.Count == 0)
-            {
-                if (hair.Invisible)
-                    return "Invisible";
-                else
-                    return "Bald";
-            }
-            else
-            {
-                HairColorType returnColor = HairColorType.Unknown;
-                double maxConfidence = 0.0f;
-
-                for (int i = 0; i < hair.HairColor.Count; ++i)
-                {
-                    if (hair.HairColor[i].Confidence > maxConfidence)
-                    {
-                        maxConfidence = hair.HairColor[i].Confidence;
-                        returnColor = hair.HairColor[i].Color;
-                    }
-                }
-
-                return returnColor.ToString();
-            }
-        }
-
-        private string GetAccessories(IList<Accessory> accessories)
+        private string GetAccessories(IList<AccessoryItem> accessories)
         {
             if (accessories.Count == 0)
             {
@@ -403,53 +378,6 @@ namespace Microsoft.ProjectOxford.Face.Controls
             }
 
             return "Accessories: " + String.Join(",", accessoryArray);
-        }
-
-        private string GetEmotion(Emotion emotion)
-        {
-            string emotionType = string.Empty;
-            double emotionValue = 0.0;
-            if (emotion.Anger > emotionValue)
-            {
-                emotionValue = emotion.Anger;
-                emotionType = "Anger";
-            }
-            if (emotion.Contempt > emotionValue)
-            {
-                emotionValue = emotion.Contempt;
-                emotionType = "Contempt";
-            }
-            if (emotion.Disgust > emotionValue)
-            {
-                emotionValue = emotion.Disgust;
-                emotionType = "Disgust";
-            }
-            if (emotion.Fear > emotionValue)
-            {
-                emotionValue = emotion.Fear;
-                emotionType = "Fear";
-            }
-            if (emotion.Happiness > emotionValue)
-            {
-                emotionValue = emotion.Happiness;
-                emotionType = "Happiness";
-            }
-            if (emotion.Neutral > emotionValue)
-            {
-                emotionValue = emotion.Neutral;
-                emotionType = "Neutral";
-            }
-            if (emotion.Sadness > emotionValue)
-            {
-                emotionValue = emotion.Sadness;
-                emotionType = "Sadness";
-            }
-            if (emotion.Surprise > emotionValue)
-            {
-                emotionValue = emotion.Surprise;
-                emotionType = "Surprise";
-            }
-            return $"{emotionType}";
         }
 
         #endregion Methods

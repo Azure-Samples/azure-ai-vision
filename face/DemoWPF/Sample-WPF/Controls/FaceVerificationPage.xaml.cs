@@ -32,15 +32,17 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-using Microsoft.Azure.CognitiveServices.Vision.Face;
-using Microsoft.Azure.CognitiveServices.Vision.Face.Models;
+using Azure;
+using Azure.AI.Vision.Face;
 
 namespace Microsoft.ProjectOxford.Face.Controls
 {
@@ -59,12 +61,12 @@ namespace Microsoft.ProjectOxford.Face.Controls
         /// <summary>
         /// RecognitionModel for Face detection and LargePersonGroup
         /// </summary>
-        private static readonly string recognitionModel = RecognitionModel.Recognition02;
+        private static readonly FaceRecognitionModel recognitionModel = FaceRecognitionModel.Recognition04;
 
         /// <summary>
         /// DetectionModel for Face detection
         /// </summary>
-        private static readonly string detectionModel = DetectionModel.Detection02;
+        private static readonly FaceDetectionModel detectionModel = FaceDetectionModel.Detection03;
 
         /// <summary>
         /// Temporary group name for create person database
@@ -203,7 +205,8 @@ namespace Microsoft.ProjectOxford.Face.Controls
                     try
                     {
                         var faceServiceClient = FaceServiceClientHelper.GetInstance(this);
-                        var faces = await faceServiceClient.Face.DetectWithStreamAsync(fileStream, recognitionModel: recognitionModel, detectionModel: detectionModel);
+                        Response<IReadOnlyList<FaceDetectionResult>> response = await faceServiceClient.DetectAsync(BinaryData.FromStream(fileStream), detectionModel, recognitionModel, true);
+                        IList<FaceDetectionResult> faces = response.Value.ToList();
 
                         // Handle REST API calling error
                         if (faces == null)
@@ -222,9 +225,9 @@ namespace Microsoft.ProjectOxford.Face.Controls
 
                         FaceVerifyButton.IsEnabled = (LeftResultCollection.Count != 0 && RightResultCollection.Count != 0);
                     }
-                    catch (APIErrorException ex)
+                    catch (RequestFailedException ex)
                     {
-                        MainWindow.Log("Response: {0}. {1}", ex.Body.Error.Code, ex.Body.Error.Message);
+                        MainWindow.Log("Response: {0}. {1}", ex.ErrorCode, ex.Message);
                     }
                 }
             }
@@ -267,7 +270,8 @@ namespace Microsoft.ProjectOxford.Face.Controls
                     try
                     {
                         var faceServiceClient = FaceServiceClientHelper.GetInstance(this);
-                        var faces = await faceServiceClient.Face.DetectWithStreamAsync(fileStream, recognitionModel: recognitionModel, detectionModel: detectionModel);
+                        Response<IReadOnlyList<FaceDetectionResult>> response = await faceServiceClient.DetectAsync(BinaryData.FromStream(fileStream), detectionModel, recognitionModel, true);
+                        IList<FaceDetectionResult> faces = response.Value.ToList();
 
                         // Handle REST API calling error
                         if (faces == null)
@@ -285,9 +289,9 @@ namespace Microsoft.ProjectOxford.Face.Controls
                         }
                         FaceVerifyButton.IsEnabled = (LeftResultCollection.Count != 0 && RightResultCollection.Count != 0);
                     }
-                    catch (APIErrorException ex)
+                    catch (RequestFailedException ex)
                     {
-                        MainWindow.Log("Response: {0}. {1}", ex.Body.Error.Code, ex.Body.Error.Message);
+                        MainWindow.Log("Response: {0}. {1}", ex.ErrorCode, ex.Message);
 
                         return;
                     }
@@ -317,16 +321,17 @@ namespace Microsoft.ProjectOxford.Face.Controls
                 try
                 {
                     var faceServiceClient = FaceServiceClientHelper.GetInstance(this);
-                    var res = await faceServiceClient.Face.VerifyFaceToFaceAsync(Guid.Parse(faceId1), Guid.Parse(faceId2));
+                    Response<FaceVerificationResult> response  = await faceServiceClient.VerifyFaceToFaceAsync(Guid.Parse(faceId1), Guid.Parse(faceId2));
+                    FaceVerificationResult res = response.Value;
 
                     // Verification result contains IsIdentical (true or false) and Confidence (in range 0.0 ~ 1.0),
                     // here we update verify result on UI by FaceVerifyResult binding
                     FaceVerifyResult = string.Format("Confidence = {0:0.00}, {1}", res.Confidence,  res.IsIdentical ? "two faces belong to same person" : "two faces not belong to same person");
                     MainWindow.Log("Response: Success. Face {0} and {1} {2} to the same person", faceId1, faceId2, res.IsIdentical ? "belong" : "not belong");
                 }
-                catch (APIErrorException ex)
+                catch (RequestFailedException ex)
                 {
-                    MainWindow.Log("Response: {0}. {1}", ex.Body.Error.Code, ex.Body.Error.Message);
+                    MainWindow.Log("Response: {0}. {1}", ex.ErrorCode, ex.Message);
 
                     return;
                 }
