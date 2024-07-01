@@ -72,7 +72,7 @@ with Image.open(response.raw) as image:
     detected_faces = []
     image_memory_stream.seek(0)
     try:
-        with FaceClient(endpoint=FACE_ENDPOINT, credential=AzureKeyCredential(FACE_KEY)) as face_client:
+        with FaceClient(endpoint=FACE_ENDPOINT, credential=AzureKeyCredential(FACE_KEY), headers={"X-MS-AZSDK-Telemetry": "sample=portrait-processing"}) as face_client:
             detected_faces = face_client.detect(
                 image_memory_stream,
                 detection_model=DETECTION_MODEL,
