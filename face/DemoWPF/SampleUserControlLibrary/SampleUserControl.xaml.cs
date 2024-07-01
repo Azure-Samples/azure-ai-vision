@@ -1,12 +1,4 @@
 ﻿// 
-// Copyright (c) Microsoft. All rights reserved.
-// Licensed under the MIT license.
-// 
-// Microsoft Cognitive Services (formerly Project Oxford): https://www.microsoft.com/cognitive-services
-// 
-// Microsoft Cognitive Services (formerly Project Oxford) GitHub:
-// https://github.com/Microsoft/Cognitive-Common-Windows
-// 
 // Copyright (c) Microsoft Corporation
 // All rights reserved.
 // 
