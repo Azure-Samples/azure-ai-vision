@@ -100,10 +100,6 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Page Include="Controls\FaceIdentificationPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
     <Page Include="Controls\FaceFindSimilarPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -130,9 +126,6 @@
     </Compile>
     <Compile Include="Controls\Face.cs" />
     <Compile Include="Controls\FaceServiceClientHelper.cs" />
-    <Compile Include="Controls\FaceIdentificationPage.xaml.cs">
-      <DependentUpon>FaceIdentificationPage.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Controls\FaceFindSimilarPage.xaml.cs">
       <DependentUpon>FaceFindSimilarPage.xaml</DependentUpon>
     </Compile>

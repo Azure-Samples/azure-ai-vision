@@ -66,7 +66,6 @@ namespace Microsoft.ProjectOxford.Face
                 FaceFaceVerificationDescription = "Face to Face Verification determines whether two faces belong to the same person. You can pick single face image, the detected face will be shown on the image. Then click 'Verify' to get the verification result.",
                 FaceGroupingDescription = "Put similar faces to same group according to appearance similarity. You can pick an image folder for grouping by 'Group', doing this will group all detected faces and shown under Grouping Result.",
                 FaceFindSimilarDescription = "Find similar faces for the query face from all the candidates. You can pick an image folder, and all detected faces inside the folder will be treated as candidate. Use 'Open Query Face' to pick the query faces. The result will be list as 'query face's thumbnail', 'similar faces' thumbnails with similarity ranked'. Both of 'MatchPerson' mode and 'MatchFace' mode results will be listed. 'MatchPerson' mode return the top candidate faces among those recognized as the same person with the query face, so if no candidate faces are recognized as the same person with the query face, no one will be returned, while 'MatchFace' mode returns the top candidate faces with highest similarity confidence without checking if the returned face belong to the same person with the query face.",
-                FaceIdentificationDescription = "Tell whom an input face belongs to given a tagged person database. Here we only handle tagged person database in following format: 1). One root folder. 2). Sub-folders are named as person's name. 3). Each person's images are put into their own sub-folder. Pick the root folder, then choose an image to identify, all faces will be shown on the image with the identified person's name.",
             };
             this.DataContext = this.ViewModel;
             this._scenariosControl.SampleScenarioList = new Scenario[]
@@ -85,11 +84,6 @@ namespace Microsoft.ProjectOxford.Face
                 {
                     PageClass = typeof(FaceGroupingPage),
                     Title = "Face Grouping",
-                },
-                new Scenario()
-                {
-                    PageClass = typeof(FaceIdentificationPage),
-                    Title = "Face Identification",
                 },
                 new Scenario()
                 {
@@ -197,15 +191,6 @@ namespace Microsoft.ProjectOxford.Face
             /// Gets or sets description of find similar face
             /// </summary>
             public string FaceFindSimilarDescription
-            {
-                get;
-                set;
-            }
-
-            /// <summary>
-            /// Gets or sets description of identification 
-            /// </summary>
-            public string FaceIdentificationDescription
             {
                 get;
                 set;
