@@ -299,6 +299,7 @@ namespace Microsoft.ProjectOxford.Face.Controls
                                 FaceAttributeType.Detection01.HeadPose,
                                 FaceAttributeType.Detection01.Noise,
                                 FaceAttributeType.Detection01.Occlusion,
+                                FaceAttributeType.Recognition04.QualityForRecognition,
                             }
                         );
                         IList<FaceDetectionResult> faces = response.Value.ToList();
@@ -326,6 +327,7 @@ namespace Microsoft.ProjectOxford.Face.Controls
                                 Blur = string.Format("Blur: {0}", face.FaceAttributes.Blur.BlurLevel.ToString()),
                                 Exposure = string.Format("{0}", face.FaceAttributes.Exposure.ExposureLevel.ToString()),
                                 Noise = string.Format("Noise: {0}", face.FaceAttributes.Noise.NoiseLevel.ToString()),
+                                QualityForRecognition = string.Format("QualityForRecognition: {0}", face.FaceAttributes.QualityForRecognition.ToString()),
                             });
                         }
 
