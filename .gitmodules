@@ -1,0 +1,3 @@
+[submodule "face/EnrollWithReactNative"]
+	path = face/EnrollWithReactNative
+	url = https://github.com/Azure-Samples/cognitive-services-FaceAPIEnrollmentSample
