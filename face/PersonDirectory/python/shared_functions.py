@@ -86,7 +86,7 @@ def add_person_face(subscription_key, endpoint, image_path, person_id, injection
         
 # Function to create a new person
 def create_person(subscription_key, endpoint, person_name, injection_header=None):
-    url = f"{endpoint}/face/v1.1-preview.1/persons"
+    create_person_url = f"{endpoint}/face/v1.1-preview.1/persons"
     headers = {
         'Ocp-Apim-Subscription-Key': subscription_key,
         'Content-Type': 'application/json',
@@ -96,7 +96,7 @@ def create_person(subscription_key, endpoint, person_name, injection_header=None
         "name": person_name,
     }
     try:
-        response = requests.post(url, headers=headers, json=data)
+        response = requests.post(create_person_url, headers=headers, json=data)
         response.raise_for_status()
 
         if response.status_code == 202:
@@ -119,7 +119,7 @@ def create_person(subscription_key, endpoint, person_name, injection_header=None
         return None
 
 # Function to identify faces in an image
-def identify_faces(subscription_key, endpoint, image_path, person_ids, injection_header=None):
+def identify_faces(subscription_key, endpoint, image_path, person_ids=None, dynamic_person_group_id=None, injection_header=None):
     headers = {
         'Ocp-Apim-Subscription-Key': subscription_key,
         'Content-Type': 'application/octet-stream',
@@ -136,10 +136,17 @@ def identify_faces(subscription_key, endpoint, image_path, person_ids, injection
     headers['Content-Type'] = 'application/json'
     body = {
         'faceIds': [face_id],
-        'personIds': person_ids,
         'maxNumOfCandidatesReturned': 1,
         'confidenceThreshold': 0.5
     }
+    if person_ids:
+        body['personIds'] = person_ids
+    elif dynamic_person_group_id:
+        body['dynamicPersonGroupId'] = dynamic_person_group_id
+    else:
+        print("Person IDs or Dynamic Person Group ID must be provided.")
+        return
+
     response = requests.post(identify_url, headers=headers, json=body)
     response.raise_for_status()
     results = response.json()
@@ -151,3 +158,38 @@ def identify_faces(subscription_key, endpoint, image_path, person_ids, injection
             print(f"Face {i+1} identified as person_id: {person_id} with confidence: {confidence}")
         else:
             print(f"Face {i+1} not identified.")
+
+# Function to create a dynamic person group
+def create_dynamic_person_group(subscription_key, endpoint, dynamic_person_group_id, person_ids, injection_header=None):
+    create_DPG_url = f"{endpoint}/face/v1.0-preview/dynamicpersongroups/{dynamic_person_group_id}"
+    headers = {
+        'Ocp-Apim-Subscription-Key': subscription_key,
+        'Content-Type': 'application/json',
+        'X-MS-AZSDK-Telemetry': injection_header
+    }
+    body = {
+        "name": "Example DynamicPersonGroup",
+        "userData": "User defined data",
+        "addPersonIds": person_ids
+    }
+    try:
+        response = requests.put(create_DPG_url, headers=headers, json=body)
+        response.raise_for_status()
+
+        if response.status_code == 202:
+            operation_location = response.headers.get('Operation-Location')
+            if operation_location:
+                if check_operation_status(subscription_key, operation_location):
+                    return True
+                else:
+                    print ("Failed to create dynamic person group.")
+                    return False
+            else:
+                print("No Operation-Location header found in the response.")
+                return False
+        else:
+            print(f"Failed to create dynamic person group: {response.json()}")
+            return False
+    except requests.exceptions.RequestException as e:
+        print(f"Request failed: {e}")
+        return False
