@@ -12,7 +12,7 @@ This repository contains sample Jupyter notebooks demonstrating how to use Azure
 | [Add a face to a face collection](add_face_to_collection.ipynb) |  The application adds a face to a face collection, selecting the largest face if multiple faces are detected in the image. | Collection Management |
 
 ## Installation
-Install all Python modules and packages listed in the requirements.txt file using the below command.
+Install all Python modules and packages listed in the [requirements.txt](requirements.txt) file using the below command.
 
 ```python
 pip install -r requirements.txt
