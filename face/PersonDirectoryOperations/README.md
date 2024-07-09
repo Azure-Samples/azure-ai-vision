@@ -1,5 +1,5 @@
 
-## Person Directory
+## Person Directory Operations
 
 This repository contains scripts demonstrating how to enroll faces for each person from directories of images and identify them leveraging the PersonDirectory data structure.
 

@@ -56,7 +56,7 @@ def add_person_face(subscription_key, endpoint, image_path, person_id, injection
         'detectionModel': 'detection_03'
     }
         
-    faces = detect_faces(subscription_key, endpoint, image_path)
+    faces = detect_faces(subscription_key, endpoint, image_path, injection_header)
     if len(faces) == 0:
         return "No faces detected in the image."
     elif len(faces) > 1:
@@ -68,7 +68,7 @@ def add_person_face(subscription_key, endpoint, image_path, person_id, injection
     else:
         print(f"One face detected. Adding to the target.")
 
-    add_face_url = endpoint + f"/face/v1.0-preview/persons/{person_id}/recognitionModels/recognition_04/persistedFaces"
+    add_face_url = endpoint + f"/face/v1.1-preview.1/persons/{person_id}/recognitionModels/recognition_04/persistedFaces"
     with open(image_path, 'rb') as image_data:
         response = requests.post(add_face_url, params=params, headers=headers, data=image_data)
         if response.status_code == 202:
@@ -118,6 +118,35 @@ def create_person(subscription_key, endpoint, person_name, injection_header=None
         print(f"Request failed: {e}")
         return None
 
+# Function to delete a person
+def delete_person(subscription_key, endpoint, person_id, injection_header=None):
+    delete_person_url = f"{endpoint}/face/v1.1-preview.1/persons/{person_id}"
+    headers = {
+        'Ocp-Apim-Subscription-Key': subscription_key,
+        'X-MS-AZSDK-Telemetry': injection_header
+    }
+    try:
+        response = requests.delete(delete_person_url, headers=headers)
+        response.raise_for_status()
+
+        if response.status_code == 202:
+            operation_location = response.headers.get('Operation-Location')
+            if operation_location:
+                if check_operation_status(subscription_key, operation_location):
+                    return True
+                else:
+                    print ("Failed to delete person.")
+                    return False
+            else:
+                print("No Operation-Location header found in the response.")
+                return False
+        else:
+            print(f"Failed to delete person: {response.json()}")
+            return False
+    except requests.exceptions.RequestException as e:
+        print(f"Request failed: {e}")
+        return False
+
 # Function to identify faces in an image
 def identify_faces(subscription_key, endpoint, image_path, person_ids=None, dynamic_person_group_id=None, injection_header=None):
     headers = {
@@ -125,17 +154,18 @@ def identify_faces(subscription_key, endpoint, image_path, person_ids=None, dyna
         'Content-Type': 'application/octet-stream',
         'X-MS-AZSDK-Telemetry': injection_header
     }
-    faces = detect_faces(subscription_key, endpoint, image_path)
-    if len(faces) > 0:
-        face_id = faces[0]['faceId']
-    else:
+    faces = detect_faces(subscription_key, endpoint, image_path, injection_header)
+    if len(faces) == 0:
         print("No faces detected in the image.")
         return
+    face_ids = []
+    for face in faces:
+        face_ids.append(face['faceId'])
     
-    identify_url = endpoint + "/face/v1.0-preview/identify"
+    identify_url = endpoint + "/face/v1.1-preview.1/identify"
     headers['Content-Type'] = 'application/json'
     body = {
-        'faceIds': [face_id],
+        'faceIds': face_ids,
         'maxNumOfCandidatesReturned': 1,
         'confidenceThreshold': 0.5
     }
@@ -161,7 +191,7 @@ def identify_faces(subscription_key, endpoint, image_path, person_ids=None, dyna
 
 # Function to create a dynamic person group
 def create_dynamic_person_group(subscription_key, endpoint, dynamic_person_group_id, person_ids, injection_header=None):
-    create_DPG_url = f"{endpoint}/face/v1.0-preview/dynamicpersongroups/{dynamic_person_group_id}"
+    create_DPG_url = f"{endpoint}/face/v1.1-preview.1/dynamicpersongroups/{dynamic_person_group_id}"
     headers = {
         'Ocp-Apim-Subscription-Key': subscription_key,
         'Content-Type': 'application/json',
@@ -189,6 +219,35 @@ def create_dynamic_person_group(subscription_key, endpoint, dynamic_person_group
                 return False
         else:
             print(f"Failed to create dynamic person group: {response.json()}")
+            return False
+    except requests.exceptions.RequestException as e:
+        print(f"Request failed: {e}")
+        return False
+
+# Function to delete a dynamic person group
+def delete_dynamic_person_group(subscription_key, endpoint, dynamic_person_group_id, injection_header=None):
+    delete_DPG_url = f"{endpoint}/face/v1.1-preview.1/dynamicpersongroups/{dynamic_person_group_id}"
+    headers = {
+        'Ocp-Apim-Subscription-Key': subscription_key,
+        'X-MS-AZSDK-Telemetry': injection_header
+    }
+    try:
+        response = requests.delete(delete_DPG_url, headers=headers)
+        response.raise_for_status()
+
+        if response.status_code == 202:
+            operation_location = response.headers.get('Operation-Location')
+            if operation_location:
+                if check_operation_status(subscription_key, operation_location):
+                    return True
+                else:
+                    print ("Failed to delete dynamic person group.")
+                    return False
+            else:
+                print("No Operation-Location header found in the response.")
+                return False
+        else:
+            print(f"Failed to delete dynamic person group: {response.json()}")
             return False
     except requests.exceptions.RequestException as e:
         print(f"Request failed: {e}")

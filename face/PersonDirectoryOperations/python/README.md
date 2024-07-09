@@ -14,7 +14,7 @@ This repository provides sample Jupyter notebooks showcasing the usage of the Pe
 
 ## Shared Functions
 
-For convenience, commonly used functions across these notebooks are consolidated in [shared_functions.ipynb](shared_functions.py). Import these functions in any notebook as needed.
+For convenience, commonly used functions across these notebooks are consolidated in [shared_functions.py](shared_functions.py). Import these functions in any notebook as needed.
 
 ## Installation
 Install all Python modules and packages listed in the [requirements.txt](requirements.txt) file using the below command.
