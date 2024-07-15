@@ -9,8 +9,8 @@ This repository provides sample Jupyter notebooks showcasing the usage of the Pe
 ## Contents
 | Notebook | Description | Enrollment | Identification |  
 |----------|-------------|------------|----------------|
-| [Enroll persons with single face](enroll_single_face_per_person.ipynb) | The application enrolls one face for each person from a directory of images, with each image containing a different person. | Single face per person | Against a dnynamic person group/a specific list of persons |
-| [Enroll persons with multiple faces](enroll_multiple_faces_per_person.ipynb) | The application enrolls multiple faces for each person from a directory where each subfolder represents a different person. | Mutiple faces per person | Against a dnynamic person group/a specific list of persons |
+| [Enroll persons with single face](enroll_single_face_per_person.ipynb) | The application enrolls one face for each person from a directory of images, with each image containing a different person. | Single face per person | Against a dynamic person group/a specific list of persons |
+| [Enroll persons with multiple faces](enroll_multiple_faces_per_person.ipynb) | The application enrolls multiple faces for each person from a directory where each subfolder represents a different person. | Mutiple faces per person | Against a dynamic person group/a specific list of persons |
 
 ## Shared Functions
 
