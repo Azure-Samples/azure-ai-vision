@@ -2,6 +2,7 @@ import requests
 import sys
 import os
 import time
+import json
 
 project_root = os.path.abspath(os.path.join(os.getcwd(), "../../"))
 if project_root not in sys.path:
@@ -9,7 +10,7 @@ if project_root not in sys.path:
 from PersonDirectoryOperations.python.shared_functions import detect_faces, enlarge_bounding_box, get_image_dimensions
 
 class UnifiedFaceCollection:
-    def __init__(self, subscription_key, endpoint, face_collection_id, injection_header):
+    def __init__(self, subscription_key, endpoint, face_collection_id, injection_header, mapping_file='face_mapping.json'):
         self.subscription_key = subscription_key
         self.endpoint = endpoint
         self.face_api_url = f"{self.endpoint}/face/v1.0"
@@ -22,9 +23,22 @@ class UnifiedFaceCollection:
             'Content-Type': 'application/json',
             'X-MS-AZSDK-Telemetry': injection_header
         }
-        self.create_containers()
+        self.mapping_file = mapping_file
+        self.face_mapping = self.load_mapping()
+        self.create_collections()
 
-    def create_containers(self):
+    def load_mapping(self):
+        try:
+            with open(self.mapping_file, 'r') as file:
+                return json.load(file)
+        except FileNotFoundError:
+            return {}
+
+    def save_mapping(self):
+        with open(self.mapping_file, 'w') as file:
+            json.dump(self.face_mapping, file)
+
+    def create_collections(self):
         # Create Large Face List
         face_list_url = f"{self.face_api_url}/largefacelists/{self.large_face_list_id}"
         face_list_response = requests.put(face_list_url, headers=self.headers, json={"name": self.face_collection_id + " Face List", "recognitionModel": "recognition_04"})
@@ -69,32 +83,99 @@ class UnifiedFaceCollection:
             if face_list_response.status_code != 200:
                 return []
         face_list_result = face_list_response.json()
-        
+        persisted_face_id = face_list_result['persistedFaceId']
+
         if person_name:
             # Check if person exists
             person = self.get_person_by_name(person_name)
             if person is None:
                 # Create a new person if not exists
                 person = self.create_person(person_name)
-            
+            person_id = person['personId']
+
             # Add face to the created or existing person
             with open(image_path, 'rb') as image:
                 person_face_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons/{person['personId']}/persistedfaces"
                 person_face_response = requests.post(person_face_url, params=params, headers=add_face_headers, data=image)
             
             if person_face_response.status_code == 200:
+                person_face_result = person_face_response.json()
+                person_persisted_face_id = person_face_result['persistedFaceId']
+
+                # Update the mapping
+                self.face_mapping[persisted_face_id] = {
+                    "personId": person_id,
+                    "personPersistedFaceId": person_persisted_face_id
+                }
+                self.save_mapping()
+
                 return {
                     "face_list": {
-                        "persistedFaceId": face_list_result['persistedFaceId'],
+                        "persistedFaceId": persisted_face_id,
                     },
                     "person_group": {
-                        "personId": person['personId'],
+                        "personId": person_id,
                     }
                 }
             else:
                 return []
         
         return {"face_list": { "persistedFaceId": face_list_result['persistedFaceId'] }}
+
+    def remove_face(self, persisted_face_id):
+        # Remove face from Large Face List
+        face_list_url = f"{self.face_api_url}/largefacelists/{self.large_face_list_id}/persistedfaces/{persisted_face_id}"
+        face_list_response = requests.delete(face_list_url, headers=self.headers)
+        if face_list_response.status_code != 200:
+            return False
+
+        if persisted_face_id in self.face_mapping:
+            person_info = self.face_mapping[persisted_face_id]
+            person_id = person_info['personId']
+            person_persisted_face_id = person_info['personPersistedFaceId']
+
+            # Remove face from Large Person Group
+            person_face_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons/{person_id}/persistedfaces/{person_persisted_face_id}"
+            person_face_response = requests.delete(person_face_url, headers=self.headers)
+            if person_face_response.status_code != 200:
+                return False
+
+            del self.face_mapping[persisted_face_id]
+            self.save_mapping()
+
+        return True
+
+    def remove_person(self, person_identifier):
+        # Determine if the identifier is a name or an ID
+        person_id = None
+        if isinstance(person_identifier, str) and len(person_identifier) == 36:
+            person_id = person_identifier
+        else:
+            person = self.get_person_by_name(person_identifier)
+            if person:
+                person_id = person['personId']
+            else:
+                return False
+
+        # Remove the person from the person group
+        delete_person_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons/{person_id}"
+        delete_person_response = requests.delete(delete_person_url, headers=self.headers)
+
+        if delete_person_response.status_code != 200:
+            return False
+
+        # Remove all associated face mappings
+        face_ids_to_remove = []
+        for face_list_id, mapping in self.face_mapping.items():
+            if mapping['personId'] == person_id:
+                face_ids_to_remove.append(face_list_id)
+
+        for face_id in face_ids_to_remove:
+            del self.face_mapping[face_id]
+
+        self.save_mapping()
+
+        return True
 
     def create_person(self, person_name):
         person_group_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons"
