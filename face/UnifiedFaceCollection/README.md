@@ -14,23 +14,25 @@ This repository contains a wrapper that demonstrates a unified interface for man
 * Initialization:
     * Initialize the unified face collection with the necessary parameters.
     * Load existing face mapping or create a new one if it doesn't exist.
-* Create/delete Collection
-    * Create/delete a large face list with a specific ID.
-    * Create/delete a large person group with a specific ID.
+* Create/Delete Collections with a Unified ID
+    * Create both a large face list and a large person group with a single unified ID.
+    * Delete both the large face list and the large person group with the same unified ID.
 * Add Face
     * Add the detected face to the large face list and get the face ID.
-    * Add a new person to the large person group and associate the detected face with this person.
-    * Update the face mapping with the new face and person IDs.
+    * Add a new person to the large person group, associate the detected face with this person, and get the face ID and person ID.
+    * Update the face mapping with the face ID from the large face list to the face ID and person ID in the large person group.
+    * Return the face ID from the large face list and person ID from the large person group.
 * Remove Face
     * Remove the face from the large face list using the face ID.
-    * Remove the face from the large person group using the associated person ID and face ID.
+    * Find the corresponding large person group's face ID and person ID from the mapping file.
+    * Remove the face from the large person group using the face ID and person ID.
     * Update the face mapping to reflect these changes.
 * Remove Person
-    * Remove the person from the large person group using the associated person ID or person name.
+    * Remove the person from the large person group using the person ID or person name.
     * Update the face mapping to remove all associated face IDs linked to this person.
 * Find Similar Faces/Persons
     * Search for similar faces within the large face list.
-    * Serach for similar persons within the large person group.  
+    * Search for similar persons within the large person group.
 * Face Mapping Management
     * Load the face mapping from a JSON file during initialization.
     * Save the updated face mapping to the JSON file after modifying face data.
