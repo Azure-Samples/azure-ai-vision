@@ -10,7 +10,7 @@ if project_root not in sys.path:
 from PersonDirectoryOperations.python.shared_functions import detect_faces, enlarge_bounding_box, get_image_dimensions
 
 class UnifiedFaceCollection:
-    def __init__(self, subscription_key, endpoint, face_collection_id, injection_header, mapping_file='face_mapping.json'):
+    def __init__(self, subscription_key, endpoint, face_collection_id, injection_header):
         self.subscription_key = subscription_key
         self.endpoint = endpoint
         self.face_api_url = f"{self.endpoint}/face/v1.0"
@@ -23,20 +23,7 @@ class UnifiedFaceCollection:
             'Content-Type': 'application/json',
             'X-MS-AZSDK-Telemetry': injection_header
         }
-        self.mapping_file = mapping_file
-        self.face_mapping = self.load_mapping()
         self.create_collections()
-
-    def load_mapping(self):
-        try:
-            with open(self.mapping_file, 'r') as file:
-                return json.load(file)
-        except FileNotFoundError:
-            return {}
-
-    def save_mapping(self):
-        with open(self.mapping_file, 'w') as file:
-            json.dump(self.face_mapping, file)
 
     def create_collections(self):
         # Create Large Face List
@@ -101,13 +88,36 @@ class UnifiedFaceCollection:
             if person_face_response.status_code == 200:
                 person_face_result = person_face_response.json()
                 person_persisted_face_id = person_face_result['persistedFaceId']
-
-                # Update the mapping
-                self.face_mapping[persisted_face_id] = {
+                # Update the userData field with the mapping in the Large Face List
+                user_data_face_list = {
                     "personId": person_id,
                     "personPersistedFaceId": person_persisted_face_id
                 }
-                self.save_mapping()
+                user_data_face_list_json = json.dumps(user_data_face_list)
+
+                update_url_face_list = f"{self.face_api_url}/largefacelists/{self.large_face_list_id}/persistedfaces/{persisted_face_id}"
+                update_body_face_list = {
+                    "userData": user_data_face_list_json
+                }
+                update_response_face_list = requests.patch(update_url_face_list, headers=self.headers, json=update_body_face_list)
+                if update_response_face_list.status_code != 200:
+                    print("Failed to update userData for the face in the Large Face List.")
+                    return []
+
+                # Update the userData field with the mapping in the Large Person Group
+                user_data_large_person_group = {
+                    "persistedFaceId": persisted_face_id
+                }
+                user_data_large_person_group_json = json.dumps(user_data_large_person_group)
+
+                update_url_large_person_group = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons/{person_id}/persistedfaces/{person_persisted_face_id}"
+                update_body_large_person_group = {
+                    "userData": user_data_large_person_group_json
+                }
+                update_response_large_person_group = requests.patch(update_url_large_person_group, headers=self.headers, json=update_body_large_person_group)
+                if update_response_large_person_group.status_code != 200:
+                    print("Failed to update userData for the face in the Large Person Group.")
+                    return []
 
                 return {
                     "face_list": {
@@ -123,25 +133,31 @@ class UnifiedFaceCollection:
         return {"face_list": { "persistedFaceId": face_list_result['persistedFaceId'] }}
 
     def remove_face(self, persisted_face_id):
-        # Remove face from Large Face List
         face_list_url = f"{self.face_api_url}/largefacelists/{self.large_face_list_id}/persistedfaces/{persisted_face_id}"
-        face_list_response = requests.delete(face_list_url, headers=self.headers)
+        face_list_response = requests.get(face_list_url, headers=self.headers)
         if face_list_response.status_code != 200:
             return False
 
-        if persisted_face_id in self.face_mapping:
-            person_info = self.face_mapping[persisted_face_id]
-            person_id = person_info['personId']
-            person_persisted_face_id = person_info['personPersistedFaceId']
+        face_data = face_list_response.json()
+        user_data = face_data.get("userData")
+        if not user_data:
+            return False
 
+        user_data_dict = json.loads(user_data)
+        person_id = user_data_dict.get("personId")
+        person_persisted_face_id = user_data_dict.get("personPersistedFaceId")
+
+        if person_id and person_persisted_face_id:
             # Remove face from Large Person Group
             person_face_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons/{person_id}/persistedfaces/{person_persisted_face_id}"
             person_face_response = requests.delete(person_face_url, headers=self.headers)
             if person_face_response.status_code != 200:
                 return False
 
-            del self.face_mapping[persisted_face_id]
-            self.save_mapping()
+        # Remove face from Large Face List
+        face_list_delete_response = requests.delete(face_list_url, headers=self.headers)
+        if face_list_delete_response.status_code != 200:
+            return False
 
         return True
 
@@ -157,23 +173,49 @@ class UnifiedFaceCollection:
             else:
                 return False
 
+        # Retrieve the person's faces from the person group
+        person_faces_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons/{person_id}"
+        person_faces_response = requests.get(person_faces_url, headers=self.headers)
+        if person_faces_response.status_code != 200:
+            return False
+
+        person_faces = person_faces_response.json()
+
+        # Update userData in the Large Face List
+        for person_persisted_face_id in person_faces['persistedFaceIds']:
+            # Retrieve userData from the face in the person group
+            person_face_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons/{person_id}/persistedfaces/{person_persisted_face_id}"
+            person_face_response = requests.get(person_face_url, headers=self.headers)
+            if person_face_response.status_code != 200:
+                continue
+
+            face_data = person_face_response.json()
+            user_data = face_data.get("userData")
+            if user_data:
+                user_data_dict = json.loads(user_data)
+                persisted_face_id = user_data_dict.get("persistedFaceId")
+
+                # Update userData for the face in the Large Face List
+                face_list_face_url = f"{self.face_api_url}/largefacelists/{self.large_face_list_id}/persistedfaces/{persisted_face_id}"
+                user_data_face_list = {
+                    "personId": None,
+                    "personPersistedFaceId": None
+                }
+                user_data_face_list_json = json.dumps(user_data_face_list)
+                update_body_face_list = {
+                    "userData": user_data_face_list_json
+                }
+                update_response_face_list = requests.patch(face_list_face_url, headers=self.headers, json=update_body_face_list)
+                if update_response_face_list.status_code != 200:
+                    print("Failed to update userData for the face in the Large Face List.")
+                    return False
+
         # Remove the person from the person group
         delete_person_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons/{person_id}"
         delete_person_response = requests.delete(delete_person_url, headers=self.headers)
 
         if delete_person_response.status_code != 200:
             return False
-
-        # Remove all associated face mappings
-        face_ids_to_remove = []
-        for face_list_id, mapping in self.face_mapping.items():
-            if mapping['personId'] == person_id:
-                face_ids_to_remove.append(face_list_id)
-
-        for face_id in face_ids_to_remove:
-            del self.face_mapping[face_id]
-
-        self.save_mapping()
 
         return True
 

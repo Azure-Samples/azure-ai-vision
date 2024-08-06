@@ -7,13 +7,12 @@ This repository contains a wrapper that demonstrates a unified interface for man
 
 * Provides a single interface to manage both face lists and person groups.
 * Adds, removes, and searches for faces within the face collection.
-* Loads and saves face mapping data to a JSON file, tracking face IDs in face lists and their associations with face IDs and person IDs in person groups.
+* Saves face mapping data on the cloud, tracking face IDs in face lists and their associations with face IDs and person IDs in person groups.
 
 ### Steps Involved
 
 * Initialization:
     * Initialize the unified face collection with the necessary parameters.
-    * Load existing face mapping or create a new one if it doesn't exist.
 * Create/Delete Collections with a Unified ID
     * Create both a large face list and a large person group with a single unified ID.
     * Delete both the large face list and the large person group with the same unified ID.
@@ -24,7 +23,7 @@ This repository contains a wrapper that demonstrates a unified interface for man
     * Return the face ID from the large face list and person ID from the large person group.
 * Remove Face
     * Remove the face from the large face list using the face ID.
-    * Find the corresponding large person group's face ID and person ID from the mapping file.
+    * Find the corresponding large person group's face ID and person ID from the mapping data.
     * Remove the face from the large person group using the face ID and person ID.
     * Update the face mapping to reflect these changes.
 * Remove Person
@@ -34,8 +33,7 @@ This repository contains a wrapper that demonstrates a unified interface for man
     * Search for similar faces within the large face list.
     * Search for similar persons within the large person group.
 * Face Mapping Management
-    * Load the face mapping from a JSON file during initialization.
-    * Save the updated face mapping to the JSON file after modifying face data.
+    * Update face mapping on the cloud after modifying face data.
 
 
 
