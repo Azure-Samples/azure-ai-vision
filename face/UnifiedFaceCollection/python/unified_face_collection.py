@@ -151,7 +151,19 @@ class UnifiedFaceCollection:
             # Remove face from Large Person Group
             person_face_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons/{person_id}/persistedfaces/{person_persisted_face_id}"
             person_face_response = requests.delete(person_face_url, headers=self.headers)
-            if person_face_response.status_code != 200:
+            if person_face_response.status_code == 200:
+                # Check if the person has any faces left
+                person_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons/{person_id}"
+                person_response = requests.get(person_url, headers=self.headers)
+                if person_response.status_code == 200:
+                    person_data = person_response.json()
+                    if not person_data.get("persistedFaceIds"):
+                        # Delete the person if no faces are left
+                        print(f"Deleting the person as no faces are left.")
+                        delete_person_response = requests.delete(person_url, headers=self.headers)
+                        if delete_person_response.status_code != 200:
+                            return False
+            else:
                 return False
 
         # Remove face from Large Face List
@@ -161,7 +173,7 @@ class UnifiedFaceCollection:
 
         return True
 
-    def remove_person(self, person_identifier):
+    def remove_person(self, person_identifier, delete_faces=False):
         # Determine if the identifier is a name or an ID
         person_id = None
         if isinstance(person_identifier, str) and len(person_identifier) == 36:
@@ -195,20 +207,28 @@ class UnifiedFaceCollection:
                 user_data_dict = json.loads(user_data)
                 persisted_face_id = user_data_dict.get("persistedFaceId")
 
-                # Update userData for the face in the Large Face List
                 face_list_face_url = f"{self.face_api_url}/largefacelists/{self.large_face_list_id}/persistedfaces/{persisted_face_id}"
-                user_data_face_list = {
-                    "personId": None,
-                    "personPersistedFaceId": None
-                }
-                user_data_face_list_json = json.dumps(user_data_face_list)
-                update_body_face_list = {
-                    "userData": user_data_face_list_json
-                }
-                update_response_face_list = requests.patch(face_list_face_url, headers=self.headers, json=update_body_face_list)
-                if update_response_face_list.status_code != 200:
-                    print("Failed to update userData for the face in the Large Face List.")
-                    return False
+
+                if delete_faces:
+                    # Delete the face from the Large Face List
+                    delete_face_list_response = requests.delete(face_list_face_url, headers=self.headers)
+                    if delete_face_list_response.status_code != 200:
+                        print("Failed to delete the face from the Large Face List.")
+                        return False
+                else:
+                    # Update userData for the face in the Large Face List
+                    user_data_face_list = {
+                        "personId": None,
+                        "personPersistedFaceId": None
+                    }
+                    user_data_face_list_json = json.dumps(user_data_face_list)
+                    update_body_face_list = {
+                        "userData": user_data_face_list_json
+                    }
+                    update_response_face_list = requests.patch(face_list_face_url, headers=self.headers, json=update_body_face_list)
+                    if update_response_face_list.status_code != 200:
+                        print("Failed to update userData for the face in the Large Face List.")
+                        return False
 
         # Remove the person from the person group
         delete_person_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons/{person_id}"
@@ -288,7 +308,7 @@ class UnifiedFaceCollection:
             # Find similar persons in the Large Person Group
             identify_url = f"{self.face_api_url}/identify"
             identify_data = {
-                'faceId': face_ids[0],
+                'faceIds': [face_ids[0]],
                 'largePersonGroupId': self.large_person_group_id,
                 'maxNumOfCandidatesReturned': 10,
             }
@@ -344,3 +364,47 @@ class UnifiedFaceCollection:
             print(f"Failed to delete Large Person Group: {person_group_response.json()}")
 
         return face_list_response.status_code == 200 and person_group_response.status_code == 200
+
+    def list_faces(self):
+        face_list_url = f"{self.face_api_url}/largefacelists/{self.large_face_list_id}/persistedfaces"
+        faces = []
+        params = {}
+
+        response = requests.get(face_list_url, headers=self.headers, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            for face in data:
+                faces.append({
+                    'persistedFaceId': face['persistedFaceId'],
+                    'personId': json.loads(face['userData']).get('personId', None)
+                })
+        else:
+            print(f"Failed to list faces: {response.json()}")
+
+        return faces
+
+    def list_persons(self):
+        persons_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons"
+        persons = []
+        params = {}
+
+        response = requests.get(persons_url, headers=self.headers, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            for person in data:
+                persons.append({
+                    'personId': person['personId'],
+                    'name': person['name'],
+                })
+        else:
+            print(f"Failed to list persons: {response.json()}")
+
+        return persons
+
+    def list_all(self):
+        faces = self.list_faces()
+        persons = self.list_persons()
+        return {
+            "faces": faces,
+            "persons": persons
+        }
