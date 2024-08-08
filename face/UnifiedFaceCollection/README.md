@@ -32,6 +32,9 @@ This repository contains a wrapper that demonstrates a unified interface for man
 * Find Similar Faces/Persons
     * Search for similar faces within the large face list.
     * Search for similar persons within the large person group.
+* List Faces/Persons
+    * List all faces in the large face list
+    * List all persons in the large person group
 * Face Mapping Management
     * Update face mapping on the cloud after modifying face data.
 
