@@ -16,6 +16,16 @@ Explore our samples and discover the things you can build with face service.
 | [FindFaces](./FindFaces) | Create and manage face collections, add faces, and verify faces within images. | | ✅ | | |
 | [PersonDirectoryOperations](./PersonDirectoryOperations) | Enroll faces for each person from directories of images and identify them leveraging the PersonDirectory data structure. | | ✅ | | |
 | [PortraitProcessing](./PortraitProcessing) | Make a portrait image out of an original image. | ✅ | ✅ | | ✅ |
+| [UnifiedFaceCollection](./UnifiedFaceCollection) | Provide a unified interface for managing both face lists and person groups. | | ✅ | | |
+
+> [!NOTE]
+> The [face liveness detection solution](https://learn.microsoft.com/azure/ai-services/computer-vision/tutorials/liveness) requires additional mobile/web SDKs to start the camera, guide the end-user in adjusting their position, and compose the liveness payload. See the frontend app integration samples:
+>
+> | Platform | Sample | Dependency (Client SDK) |
+> | :- | :- | :- |
+> | Android | [azure-ai-vision-sdk/tree/main/samples/kotlin/face/FaceAnalyzerSample](https://github.com/Azure-Samples/azure-ai-vision-sdk/tree/main/samples/kotlin/face/FaceAnalyzerSample) | [azure-ai-vision-faceanalyzer](https://azure.github.io/azure-sdk-for-android/azure-ai-vision-faceanalyzer/com/azure/android/ai/vision/faceanalyzer/package-summary.html) |
+> | iOS | [azure-ai-vision-sdk/tree/main/samples/swift/face/FaceAnalyzerSample](https://github.com/Azure-Samples/azure-ai-vision-sdk/tree/main/samples/swift/face/FaceAnalyzerSample) | [AzureAIVisionFace](https://azure.github.io/azure-sdk-for-ios/AzureAIVisionFace/index.html) |
+> | Web | [azure-ai-vision-sdk/tree/main/samples/web](https://github.com/Azure-Samples/azure-ai-vision-sdk/tree/main/samples/web) | azure-ai-vision-faceanalyzer |
 
 
 ### Documentation

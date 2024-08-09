@@ -22,7 +22,7 @@ import com.azure.ai.vision.face.models.FaceRecognitionModel;
 import com.azure.core.credential.KeyCredential;
 import com.azure.core.util.BinaryData;
 
-import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ByteArrayEntity;
@@ -158,7 +158,7 @@ public class PortraitProcessing {
             request.setHeader("Content-Type", "application/octet-stream");
             request.setHeader("Ocp-Apim-Subscription-Key", BACKGROUND_API_KEY);
             request.setEntity(new ByteArrayEntity(cropMemoryStream.toByteArray()));
-            HttpResponse response = HttpClients.createDefault().execute(request);
+            CloseableHttpResponse response = HttpClients.createDefault().execute(request);
             if (response.getStatusLine().getStatusCode() == 200) {
                 BufferedImage matting = ImageIO.read(response.getEntity().getContent());
                 ImageIO.write(matting, "bmp", new File("detection2_matting.bmp"));
@@ -177,6 +177,7 @@ public class PortraitProcessing {
             } else {
                 System.out.println("Background removal failed. No portrait image is generated.");
             }
+            response.close();
         } else {
             System.out.println("No face is detect. No portrait image is generated.");
         }
