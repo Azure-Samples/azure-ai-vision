@@ -12,9 +12,9 @@ Explore our samples and discover the things you can build with face service.
 | :- | :- | :- | :- | :- | :- |
 | [AndroidDetect](./AndroidDetect) | Detect and frame faces in an image on Android. | | | | ✅ |
 | [DemoWPF](./DemoWPF) | Run face detection, face grouping, finding similar faces, and face verification in Windows Presentation Foundation. | ✅ | | | |
+| [EnrollAndRecognizePersons ](./EnrollAndRecognizePersons) | Enroll each person’s faces from image directories and recognize new persons from images using the PersonDirectory data structure. | | ✅ | | |
 | [EnrollWithReactNative](https://github.com/Azure-Samples/cognitive-services-FaceAPIEnrollmentSample) | Get started with the sample face enrollment application for Android/iOS. | | | ✅ | |
 | [FindFaces](./FindFaces) | Create and manage face collections, add faces, and verify faces within images. | | ✅ | | |
-| [PersonDirectoryOperations](./PersonDirectoryOperations) | Enroll faces for each person from directories of images and identify them leveraging the PersonDirectory data structure. | | ✅ | | |
 | [PortraitProcessing](./PortraitProcessing) | Make a portrait image out of an original image. | ✅ | ✅ | | ✅ |
 | [UnifiedFaceCollection](./UnifiedFaceCollection) | Provide a unified interface for managing both face and person, using face lists and person groups. | | ✅ | | |
 

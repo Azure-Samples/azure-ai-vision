@@ -1,20 +1,21 @@
 
 # Introduction
 
-This repository provides sample Jupyter notebooks showcasing the usage of the PersonDirectory data structure in the Azure Face service for face enrollment and identification. 
+This repository provides sample Jupyter notebooks showcasing the usage of the PersonDirectory data structure in the Azure Face service for face enrollment and recognition. 
 - The face enrollment process covers creating a person, adding faces to a person, and forming a dynamic person group. 
-- For identification, the notebooks illustrate how to identify faces within a dynamic person group or from a specific list of persons. 
+- For recognition, the notebooks illustrate how to recognize faces within a dynamic person group or from a specific list of persons. 
 - For more details on the PersonDirectory data structure, see this [document](https://learn.microsoft.com/en-us/azure/ai-services/computer-vision/how-to/use-persondirectory).
 
 ## Contents
-| Notebook | Description | Enrollment | Identification |  
-|----------|-------------|------------|----------------|
-| [Enroll persons with single face](enroll_single_face_per_person.ipynb) | The application enrolls one face for each person from a directory of images, with each image containing a different person. | Single face per person | Against a dynamic person group/a specific list of persons |
-| [Enroll persons with multiple faces](enroll_multiple_faces_per_person.ipynb) | The application enrolls multiple faces for each person from a directory where each subfolder represents a different person. | Mutiple faces per person | Against a dynamic person group/a specific list of persons |
+| Notebook | Description | Type |  
+|----------|-------------|------------|
+| [Enroll persons with single face](enroll_single_face_per_person.ipynb) | The application enrolls one face for each person from a directory of images, with each image containing a different person. | Enrollment |
+| [Enroll persons with multiple faces](enroll_multiple_faces_per_person.ipynb) | The application enrolls multiple faces for each person from a directory where each subfolder represents a different person. | Enrollment |
+| [Recognize persons](recognize_persons.ipynb) |  The application recognizes persons against a dynamic person group/a specific list of persons | Recognition |
 
 ## Shared Functions
 
-For convenience, commonly used functions across these notebooks are consolidated in [shared_functions.py](shared_functions.py). Import these functions in any notebook as needed.
+For convenience, commonly used functions across these notebooks are consolidated in [shared_functions.py](shared_functions.py). Download this file before running any of the notebooks.
 
 ## Installation
 Install all Python modules and packages listed in the [requirements.txt](requirements.txt) file using the below command.
