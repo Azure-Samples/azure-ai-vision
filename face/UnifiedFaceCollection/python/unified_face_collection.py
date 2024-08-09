@@ -1,13 +1,7 @@
 import requests
-import sys
-import os
 import time
 import json
-
-project_root = os.path.abspath(os.path.join(os.getcwd(), "../../"))
-if project_root not in sys.path:
-    sys.path.append(project_root)
-from PersonDirectoryOperations.python.shared_functions import detect_faces, enlarge_bounding_box, get_image_dimensions
+from shared_functions import detect_faces, enlarge_bounding_box, get_image_dimensions
 
 class UnifiedFaceCollection:
     def __init__(self, subscription_key, endpoint, face_collection_id, injection_header):
