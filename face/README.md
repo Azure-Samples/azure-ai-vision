@@ -16,7 +16,7 @@ Explore our samples and discover the things you can build with face service.
 | [FindFaces](./FindFaces) | Create and manage face collections, add faces, and verify faces within images. | | ✅ | | |
 | [PersonDirectoryOperations](./PersonDirectoryOperations) | Enroll faces for each person from directories of images and identify them leveraging the PersonDirectory data structure. | | ✅ | | |
 | [PortraitProcessing](./PortraitProcessing) | Make a portrait image out of an original image. | ✅ | ✅ | | ✅ |
-| [UnifiedFaceCollection](./UnifiedFaceCollection) | Provide a unified interface for managing both face lists and person groups. | | ✅ | | |
+| [UnifiedFaceCollection](./UnifiedFaceCollection) | Provide a unified interface for managing both face and person, using face lists and person groups. | | ✅ | | |
 
 > [!NOTE]
 > The [face liveness detection solution](https://learn.microsoft.com/azure/ai-services/computer-vision/tutorials/liveness) requires additional mobile/web SDKs to start the camera, guide the end-user in adjusting their position, and compose the liveness payload. See the frontend app integration samples:
