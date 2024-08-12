@@ -2,7 +2,7 @@ import requests, time
 from PIL import Image
 from azure.core.credentials import AzureKeyCredential
 from azure.ai.vision.face import FaceClient
-from azure.ai.vision.face.models import FaceDetectionModel, FaceRecognitionModel
+from azure.ai.vision.face.models import FaceDetectionModel, FaceRecognitionModel, FaceAttributeTypeRecognition04, QualityForRecognition
 
 def detect_faces(subscription_key, endpoint, image_path, injection_header=None):
     with FaceClient(endpoint, AzureKeyCredential(subscription_key), headers = {"X-MS-AZSDK-Telemetry": injection_header}) as face_client:
@@ -12,6 +12,7 @@ def detect_faces(subscription_key, endpoint, image_path, injection_header=None):
                     detection_model=FaceDetectionModel.DETECTION_03,
                     recognition_model=FaceRecognitionModel.RECOGNITION_04,
                     return_face_id=True,
+                    return_face_attributes=[FaceAttributeTypeRecognition04.QUALITY_FOR_RECOGNITION]
                 )
         return detected_faces
     
@@ -46,7 +47,7 @@ def check_operation_status(subscription_key, operation_location):
         time.sleep(5) 
 
 # Function to add face to a person    
-def add_person_face(subscription_key, endpoint, image_path, person_id, injection_header=None):
+def add_person_face(subscription_key, endpoint, image_path, person_id, injection_header=None, quality_filter=False):
     headers = {
         'Ocp-Apim-Subscription-Key': subscription_key,
         'Content-Type': 'application/octet-stream',
@@ -59,7 +60,11 @@ def add_person_face(subscription_key, endpoint, image_path, person_id, injection
     faces = detect_faces(subscription_key, endpoint, image_path, injection_header)
     if len(faces) == 0:
         return "No faces detected in the image."
-    elif len(faces) > 1:
+    else:
+        if quality_filter and faces[0].face_attributes.quality_for_recognition == QualityForRecognition.LOW:
+            return "Face quality is too low. Please use a different image."
+
+    if len(faces) > 1:
         image_width, image_height = get_image_dimensions(image_path)
         # If multiple faces are detected, use the first face (largest face) for adding to the target
         print(f"Multiple faces detected. Using the first face (largest face) for adding to the target.")
