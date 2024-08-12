@@ -13,11 +13,13 @@ This repository contains scripts demonstrating how to enroll faces for each pers
 
 * Enroll Single Face Per Person
     * Detect faces in images from a directory.
-    * Enroll a single face per person from each image.
+    * Filter out low quality faces.
+    * Enroll a single medium/high quality face per person from each image.
     * Create a dynamic person group.
 * Enroll Multiple Faces Per Person
     * Detect faces in images from subfolders representing different persons.
-    * Enroll multiple faces per person from each subfolder.
+    * Filter out low quality faces.
+    * Enroll multiple medium/high quality faces per person from each subfolder.
     * Create a dynamic person group.
 * Recognize Faces
     * Recognize the enrolled persons using a test image.
