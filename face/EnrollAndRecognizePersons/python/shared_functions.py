@@ -164,8 +164,14 @@ def identify_faces(subscription_key, endpoint, image_path, person_ids=None, dyna
         print("No faces detected in the image.")
         return
     face_ids = []
+    face_details = []
+
     for face in faces:
         face_ids.append(face['faceId'])
+        face_details.append({
+            'faceId': face['faceId'],
+            'bbox': face['faceRectangle']
+        })
     
     identify_url = endpoint + "/face/v1.1-preview.1/identify"
     headers['Content-Type'] = 'application/json'
@@ -185,14 +191,31 @@ def identify_faces(subscription_key, endpoint, image_path, person_ids=None, dyna
     response = requests.post(identify_url, headers=headers, json=body)
     response.raise_for_status()
     results = response.json()
+
+    identified_faces = []
     for i, result in enumerate(results):
+        face_info = face_details[i]
         if len(result['candidates']) > 0:
             candidate = result['candidates'][0]
             person_id = candidate['personId']
             confidence = candidate['confidence']
-            print(f"Face {i+1} identified as person_id: {person_id} with confidence: {confidence}")
+
+            # Retrieve person details to get the name
+            person_details_url = f"{endpoint}/face/v1.1-preview.1/persons/{person_id}"
+            person_response = requests.get(person_details_url, headers=headers)
+            person_response.raise_for_status()
+            person_data = person_response.json()
+
+            face_info['personId'] = person_id
+            face_info['confidence'] = confidence
+            face_info['personName'] = person_data['name']
         else:
-            print(f"Face {i+1} not identified.")
+            face_info['personId'] = None
+            face_info['confidence'] = None
+            face_info['personName'] = 'Unknown'
+        identified_faces.append(face_info)
+
+    return identified_faces
 
 # Function to create a dynamic person group
 def create_dynamic_person_group(subscription_key, endpoint, dynamic_person_group_id, person_ids, injection_header=None):

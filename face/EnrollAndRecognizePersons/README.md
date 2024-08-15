@@ -3,6 +3,11 @@
 
 This repository contains scripts demonstrating how to enroll faces for each person from directories of images and recognize new persons from images using the PersonDirectory data structure.
 
+| Enrollment | Recognition |
+| :-: | :-: |
+| ![PD_enrollment.png](PD_enrollment.png) | ![PD_recognition.png](PD_recognition.png) |
+
+
 ### Key Features
 
 * Learn how to enroll persons with faces from images in the PersonDirectory data structure.
