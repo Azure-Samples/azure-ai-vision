@@ -21,6 +21,8 @@ import com.azure.ai.vision.face.models.FaceDetectionResult;
 import com.azure.ai.vision.face.models.FaceRecognitionModel;
 import com.azure.core.credential.KeyCredential;
 import com.azure.core.util.BinaryData;
+import com.azure.core.util.ClientOptions;
+import com.azure.core.util.Header;
 
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -91,7 +93,8 @@ public class PortraitProcessing {
         imageMemoryStreamWriter.dispose();
 
         // Detect faces in the image
-        FaceClient faceClient = new FaceClientBuilder().endpoint(FACE_ENDPOINT).credential(new KeyCredential(FACE_KEY)).buildClient();
+        ClientOptions clientOptions = new ClientOptions().setHeaders(Arrays.asList(new Header("X-MS-AZSDK-Telemetry", "sample=portrait-processing")));
+        FaceClient faceClient = new FaceClientBuilder().endpoint(FACE_ENDPOINT).credential(new KeyCredential(FACE_KEY)).clientOptions(clientOptions).buildClient();
         DetectOptions options = new DetectOptions(DETECTION_MODEL, RECO_MODEL, false).setReturnFaceAttributes(FACE_ATTRIBUTES).setReturnFaceLandmarks(true);
         List<FaceDetectionResult> detectedFaces = faceClient.detect(BinaryData.fromBytes(imageMemoryStream.toByteArray()), options);
 
