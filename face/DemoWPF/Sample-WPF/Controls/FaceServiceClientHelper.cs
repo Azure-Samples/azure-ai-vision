@@ -28,9 +28,19 @@ using System.Windows;
 using System.Windows.Controls;
 using Azure;
 using Azure.AI.Vision.Face;
+using Azure.Core.Pipeline;
+using Azure.Core;
 
 namespace Microsoft.ProjectOxford.Face.Controls
 {
+    internal class SampleUsageTrackingPolicy : HttpPipelineSynchronousPolicy
+    {
+        public override void OnSendingRequest(HttpMessage message)
+        {
+            message.Request.Headers.Add("X-MS-AZSDK-Telemetry", "sample=demo-wpf");
+        }
+    }
+
     public static class FaceServiceClientHelper
     {
         /// <summary>
@@ -74,7 +84,9 @@ namespace Microsoft.ProjectOxford.Face.Controls
                 {
                     if (_subscriptionKey != subscriptionKey || _subscriptionEndpoint != subscriptionEndpoint || _instance == null)
                     {
-                        _instance = new FaceClient(new Uri(subscriptionEndpoint), new AzureKeyCredential(subscriptionKey));
+                        var clientOptions = new AzureAIVisionFaceClientOptions();
+                        clientOptions.AddPolicy(new SampleUsageTrackingPolicy(), HttpPipelinePosition.PerCall);
+                        _instance = new FaceClient(new Uri(subscriptionEndpoint), new AzureKeyCredential(subscriptionKey), clientOptions);
 
                         _subscriptionKey = subscriptionKey;
                         _subscriptionEndpoint = subscriptionEndpoint;
