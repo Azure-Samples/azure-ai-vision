@@ -1,5 +1,7 @@
 using Azure;
 using Azure.AI.Vision.Face;
+using Azure.Core;
+using Azure.Core.Pipeline;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -73,7 +75,9 @@ bitmap.Save(
     new EncoderParameters() { Param = [new EncoderParameter(Encoder.Quality, JPEG_QUALITY)] });
 
 // Detect faces in the image
-FaceClient faceClient = new FaceClient(new Uri(FACE_ENDPOINT), new AzureKeyCredential(FACE_KEY));
+var clientOptions = new AzureAIVisionFaceClientOptions();
+clientOptions.AddPolicy(new SampleUsageTrackingPolicy(), HttpPipelinePosition.PerCall);
+FaceClient faceClient = new FaceClient(new Uri(FACE_ENDPOINT), new AzureKeyCredential(FACE_KEY), clientOptions);
 imageMemoryStream.Seek(0L, SeekOrigin.Begin);
 Response<IReadOnlyList<FaceDetectionResult>> detectResponse = await faceClient.DetectAsync(
     BinaryData.FromStream(imageMemoryStream),
@@ -180,3 +184,11 @@ else
 }
 
 Console.WriteLine("End of the sample for portrait processing.");
+
+class SampleUsageTrackingPolicy : HttpPipelineSynchronousPolicy
+{
+    public override void OnSendingRequest(HttpMessage message)
+    {
+        message.Request.Headers.Add("X-MS-AZSDK-Telemetry", "sample=portrait-processing");
+    }
+}
