@@ -27,9 +27,11 @@ public class MainActivity extends Activity {
     // Add your Face subscription key to your environment variables.
     private final String subscriptionKey = System.getenv("FACE_SUBSCRIPTION_KEY");
 
+    private final Header header = new Header("X-MS-AZSDK-Telemetry", "sample=android-detect");
     private final FaceClient faceServiceClient = new FaceClientBuilder()
             .endpoint(apiEndpoint)
             .credential(new AzureKeyCredential(subscriptionKey))
+            .clientOptions(new ClientOptions().setHeaders(Arrays.asList(header)))
             .buildClient();
 
     private final int PICK_IMAGE = 1;
