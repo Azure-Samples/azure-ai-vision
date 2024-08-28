@@ -2,8 +2,9 @@
 Run the Python script to get a processed portrait:
 
 ```console
+$ curl -L -O https://github.com/danielgatis/rembg/releases/download/v0.0.0/BiRefNet-portrait-epoch_150.onnx
 $ python3 program.py
-Sample code for portrait processing with Azure Face API and Background Removal API.
+Sample code for portrait processing with Azure Face API and Background Removal.
 Number of faces detected: 1
 Face detected: width=150, height=194, left=258, top=80
 Head pose: yaw=0.4, pitch=-1.1, roll=3.1
@@ -19,11 +20,12 @@ End of the sample for portrait processing.
 * Python 3.8+
 * Face SDK: `python3 -m pip install azure-ai-vision-face`
 * Pillow (PIL): `python3 -m pip install pillow`
+* ONNX Runtime: `python3 -m pip install onnxruntime`
 
 
 ### Keys and Endpoints
 
-[Create a Face resource](https://portal.azure.com/#create/Microsoft.CognitiveServicesFace) in the Azure portal and obtain a key and endpoint URL to call face detection API, and [a Vision resource](https://portal.azure.com/#create/Microsoft.CognitiveServicesComputerVision) to call background removal API.
+[Create a Face resource](https://portal.azure.com/#create/Microsoft.CognitiveServicesFace) in the Azure portal and obtain a key and endpoint URL to call face detection API.
 
 Set the keys and endponts as environment variables:
 
@@ -32,8 +34,6 @@ Set the keys and endponts as environment variables:
 ```cmd
 setx FACE_API_KEY <your_face_key>
 setx FACE_ENDPOINT_URL <your_face_endpoint>
-setx BACKGROUND_API_KEY <your_vision_key>
-setx BACKGROUND_ENDPOINT_URL <your_vision_endpoint>
 ```
 
 (For Linux)
@@ -41,8 +41,6 @@ setx BACKGROUND_ENDPOINT_URL <your_vision_endpoint>
 ```bash
 export FACE_API_KEY <your_face_key>
 export FACE_ENDPOINT_URL <your_face_endpoint>
-export BACKGROUND_API_KEY <your_vision_key>
-export BACKGROUND_ENDPOINT_URL <your_vision_endpoint>
 ```
 
 
