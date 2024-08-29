@@ -24,25 +24,11 @@ import com.azure.core.util.BinaryData;
 import com.azure.core.util.ClientOptions;
 import com.azure.core.util.Header;
 
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.impl.client.HttpClients;
-
 public class PortraitProcessing {
     // This key for Face API.
     private static final String FACE_KEY = System.getenv("FACE_API_KEY");
     // The endpoint URL for Face API.
     private static final String FACE_ENDPOINT = System.getenv("FACE_ENDPOINT_URL");
-    // This key for Background Removal API.
-    private static final String BACKGROUND_API_KEY = System.getenv("BACKGROUND_API_KEY");
-    // The endpoint URL for Background Removal.
-    private static final String BACKGROUND_ENDPOINT = System.getenv("BACKGROUND_ENDPOINT_URL");
-    // API version for Background Removal
-    private static final String BACKGROUND_REMOVAL_API_VERSION = "2023-02-01-preview";
-    // Foreground matting mode for Background Removal API
-    private static final String FOREGROUND_MATTING_MODE = "foregroundMatting";
     // Image url for portrait processing sample
     private static final String IMAGE_URL = "https://raw.githubusercontent.com/Azure-Samples/cognitive-services-sample-data-files/master/Face/images/detection2.jpg";
     // Maximum image size
@@ -62,7 +48,7 @@ public class PortraitProcessing {
     private static final float RIGHT_MARGIN_MAX = 1.5F;
 
     public static void main(String[] args) throws Exception {
-        System.out.println("Sample code for portrait processing with Azure Face API and Background Removal API.");
+        System.out.println("Sample code for portrait processing with Azure Face API and Background Removal.");
 
         // Read image from URL
         BufferedImage image = ImageIO.read(new URL(IMAGE_URL));
@@ -146,41 +132,22 @@ public class PortraitProcessing {
         if (!detectedFaces.isEmpty()) {
             // crop the face
             BufferedImage crop = bufferedImage.getSubimage(cropLeft, cropTop, cropRight - cropLeft, cropBottom - cropTop);
-            ByteArrayOutputStream cropMemoryStream = new ByteArrayOutputStream();
-            ImageWriter cropMemoryStreamWriter = ImageIO.getImageWritersByFormatName("jpg").next();
-            ImageWriteParam cropMemoryStreamParam = cropMemoryStreamWriter.getDefaultWriteParam();
-            cropMemoryStreamParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-            cropMemoryStreamParam.setCompressionQuality(JPEG_QUALITY);
-            cropMemoryStreamWriter.setOutput(ImageIO.createImageOutputStream(cropMemoryStream));
-            cropMemoryStreamWriter.write(null, new IIOImage(crop, null, null), cropMemoryStreamParam);
-            cropMemoryStreamWriter.dispose();
 
             // remove the background
-            String url = BACKGROUND_ENDPOINT + "computervision/imageanalysis:segment?api-version=" + BACKGROUND_REMOVAL_API_VERSION + "&mode=" + FOREGROUND_MATTING_MODE;
-            HttpPost request = new HttpPost(new URIBuilder(url).build());
-            request.setHeader("Content-Type", "application/octet-stream");
-            request.setHeader("Ocp-Apim-Subscription-Key", BACKGROUND_API_KEY);
-            request.setEntity(new ByteArrayEntity(cropMemoryStream.toByteArray()));
-            CloseableHttpResponse response = HttpClients.createDefault().execute(request);
-            if (response.getStatusLine().getStatusCode() == 200) {
-                BufferedImage matting = ImageIO.read(response.getEntity().getContent());
-                ImageIO.write(matting, "bmp", new File("detection2_matting.bmp"));
+            BufferedImage matting = new BiRefNet().predict(crop);
+            ImageIO.write(matting, "bmp", new File("detection2_matting.bmp"));
 
-                // merge the image with the foreground matting
-                BufferedImage portrait = new BufferedImage(crop.getWidth(), crop.getHeight(), BufferedImage.TYPE_INT_ARGB);
-                int[] cropPixels = crop.getRGB(0, 0, crop.getWidth(), crop.getHeight(), null, 0, crop.getWidth());
-                int[] mattingPixels = matting.getRGB(0, 0, matting.getWidth(), matting.getHeight(), null, 0, matting.getWidth());
-                int[] portraitPixels = portrait.getRGB(0, 0, portrait.getWidth(), portrait.getHeight(), null, 0, portrait.getWidth());
-                for (int i = 0; i < portraitPixels.length; i++) {
-                    int alpha = (((mattingPixels[i] >> 16) & 0x000000FF) + ((mattingPixels[i] >> 8) & 0x000000FF) + (mattingPixels[i] & 0x000000FF)) / 3;
-                    portraitPixels[i] = (cropPixels[i] & 0x00FFFFFF) | (alpha << 24);
-                }
-                portrait.setRGB(0, 0, portrait.getWidth(), portrait.getHeight(), portraitPixels, 0, portrait.getWidth());
-                ImageIO.write(portrait, "png", new File("detection2_portrait.png"));
-            } else {
-                System.out.println("Background removal failed. No portrait image is generated.");
+            // merge the image with the foreground matting
+            BufferedImage portrait = new BufferedImage(crop.getWidth(), crop.getHeight(), BufferedImage.TYPE_INT_ARGB);
+            int[] cropPixels = crop.getRGB(0, 0, crop.getWidth(), crop.getHeight(), null, 0, crop.getWidth());
+            int[] mattingPixels = matting.getRGB(0, 0, matting.getWidth(), matting.getHeight(), null, 0, matting.getWidth());
+            int[] portraitPixels = portrait.getRGB(0, 0, portrait.getWidth(), portrait.getHeight(), null, 0, portrait.getWidth());
+            for (int i = 0; i < portraitPixels.length; i++) {
+                int alpha = (((mattingPixels[i] >> 16) & 0x000000FF) + ((mattingPixels[i] >> 8) & 0x000000FF) + (mattingPixels[i] & 0x000000FF)) / 3;
+                portraitPixels[i] = (cropPixels[i] & 0x00FFFFFF) | (alpha << 24);
             }
-            response.close();
+            portrait.setRGB(0, 0, portrait.getWidth(), portrait.getHeight(), portraitPixels, 0, portrait.getWidth());
+            ImageIO.write(portrait, "png", new File("detection2_portrait.png"));
         } else {
             System.out.println("No face is detect. No portrait image is generated.");
         }
