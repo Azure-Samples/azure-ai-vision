@@ -1,24 +1,15 @@
 using Azure;
 using Azure.AI.Vision.Face;
 using Azure.Core;
-using Azure.Core.Pipeline;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using System.Net.Http.Headers;
+
+using PortraitProcessing;
 
 // This key for Face API.
 string? FACE_KEY = Environment.GetEnvironmentVariable("FACE_API_KEY");
 // The endpoint URL for Face API.
 string? FACE_ENDPOINT = Environment.GetEnvironmentVariable("FACE_ENDPOINT_URL");
-// This key for Background Removal API.
-string? BACKGROUND_API_KEY = Environment.GetEnvironmentVariable("BACKGROUND_API_KEY");
-// The endpoint URL for Background Removal.
-string? BACKGROUND_ENDPOINT = Environment.GetEnvironmentVariable("BACKGROUND_ENDPOINT_URL");
-// API version for Background Removal
-const string BACKGROUND_REMOVAL_API_VERSION = "2023-02-01-preview";
-// Foreground matting mode for Background Removal API
-const string FOREGROUND_MATTING_MODE = "foregroundMatting";
 // Image url for portrait processing sample
 const string IMAGE_URL = "https://raw.githubusercontent.com/Azure-Samples/cognitive-services-sample-data-files/master/Face/images/detection2.jpg";
 // Maximum image size
@@ -37,7 +28,7 @@ const float BOTTOM_MARGIN_MAX = 0.75F;
 const float LEFT_MARGIN_MAX = 1.5F;
 const float RIGHT_MARGIN_MAX = 1.5F;
 
-Console.WriteLine("Sample code for portrait processing with Azure Face API and Background Removal API.");
+Console.WriteLine("Sample code for portrait processing with Azure Face API and Background Removal.");
 
 // Read image from URL
 HttpClient httpClient = new HttpClient();
@@ -59,15 +50,7 @@ if (resizedWidth > MAX_IMAGE_SIZE || resizedHeight > MAX_IMAGE_SIZE)
         resizedWidth = (int)((float)resizedWidth * ((float)resizedHeight / (float)image.Height));
     }
 }
-Bitmap bitmap = new Bitmap(resizedWidth, resizedHeight);
-using (Graphics graphics = Graphics.FromImage(bitmap))
-{
-    graphics.InterpolationMode = InterpolationMode.High;
-    graphics.SmoothingMode = SmoothingMode.HighQuality;
-    graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
-    graphics.CompositingQuality = CompositingQuality.HighQuality;
-    graphics.DrawImage(image, 0, 0, resizedWidth, resizedHeight);
-}
+Bitmap bitmap = new Bitmap(image, new Size(resizedWidth, resizedHeight));
 MemoryStream imageMemoryStream = new MemoryStream();
 bitmap.Save(
     imageMemoryStream,
@@ -140,43 +123,21 @@ if (detectedFaces.Count > 0)
 {
     // crop the face
     Bitmap portrait = bitmap.Clone(Rectangle.FromLTRB(cropLeft, cropTop, cropRight, cropBottom), PixelFormat.Format32bppArgb);
-    MemoryStream cropMemoryStream = new MemoryStream();
-    portrait.Save(
-        cropMemoryStream,
-        ImageCodecInfo.GetImageEncoders().First(c => c.FormatID == ImageFormat.Jpeg.Guid),
-        new EncoderParameters() { Param = [new EncoderParameter(Encoder.Quality, JPEG_QUALITY)] });
 
     // remove the background
-    string url = $"{BACKGROUND_ENDPOINT}computervision/imageanalysis:segment?api-version={BACKGROUND_REMOVAL_API_VERSION}&mode={FOREGROUND_MATTING_MODE}";
-    cropMemoryStream.Seek(0, SeekOrigin.Begin);
-    using (StreamContent streamContent = new StreamContent(cropMemoryStream))
-    {
-        streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-        streamContent.Headers.Add("Ocp-Apim-Subscription-Key", BACKGROUND_API_KEY);
-        using (HttpResponseMessage response = await httpClient.PostAsync(url, streamContent))
-        {
-            if (response.IsSuccessStatusCode)
-            {
-                Bitmap matting = new Bitmap(Image.FromStream(await response.Content.ReadAsStreamAsync()));
-                matting.Save("detection2_matting.bmp");
+    Bitmap matting = new BiRefNet().Predict(portrait);
+    matting.Save("detection2_matting.bmp");
 
-                // merge the image with the foreground matting
-                for (int x = 0; x < portrait.Width; x++)
-                {
-                    for (int y = 0; y < portrait.Height; y++)
-                    {
-                        int alpha = ((int)matting.GetPixel(x, y).R + (int)matting.GetPixel(x, y).G + (int)matting.GetPixel(x, y).B) / 3;
-                        portrait.SetPixel(x, y, Color.FromArgb(alpha, portrait.GetPixel(x, y).R, portrait.GetPixel(x, y).G, portrait.GetPixel(x, y).B));
-                    }
-                }
-                portrait.Save("detection2_portrait.png");
-            }
-            else
-            {
-                Console.WriteLine("Background removal failed. No portrait image is generated.");
-            }
+    // merge the image with the foreground matting
+    for (int x = 0; x < portrait.Width; x++)
+    {
+        for (int y = 0; y < portrait.Height; y++)
+        {
+            int alpha = ((int)matting.GetPixel(x, y).R + (int)matting.GetPixel(x, y).G + (int)matting.GetPixel(x, y).B) / 3;
+            portrait.SetPixel(x, y, Color.FromArgb(alpha, portrait.GetPixel(x, y).R, portrait.GetPixel(x, y).G, portrait.GetPixel(x, y).B));
         }
     }
+    portrait.Save("detection2_portrait.png");
 }
 else
 {
@@ -184,11 +145,3 @@ else
 }
 
 Console.WriteLine("End of the sample for portrait processing.");
-
-class SampleUsageTrackingPolicy : HttpPipelineSynchronousPolicy
-{
-    public override void OnSendingRequest(HttpMessage message)
-    {
-        message.Request.Headers.Add("X-MS-AZSDK-Telemetry", "sample=portrait-processing");
-    }
-}

@@ -8,18 +8,12 @@ from azure.ai.vision.face import FaceClient
 from azure.ai.vision.face.models import FaceDetectionModel, FaceRecognitionModel, FaceAttributeTypeDetection03, FaceAttributeTypeRecognition04
 from azure.core.credentials import AzureKeyCredential
 
+from birefnet import BiRefNet
+
 # This key for Face API.
 FACE_KEY = os.environ["FACE_API_KEY"]
 # The endpoint URL for Face API.
 FACE_ENDPOINT = os.environ["FACE_ENDPOINT_URL"]
-# This key for Background Removal API.
-BACKGROUND_API_KEY = os.environ["BACKGROUND_API_KEY"]
-# The endpoint URL for Background Removal.
-BACKGROUND_ENDPOINT = os.environ["BACKGROUND_ENDPOINT_URL"]
-# API version for Background Removal
-BACKGROUND_REMOVAL_API_VERSION = "2023-02-01-preview"
-# Foreground matting mode for Background Removal API
-FOREGROUND_MATTING_MODE = "foregroundMatting"
 # Image url for portrait processing sample
 IMAGE_URL = 'https://raw.githubusercontent.com/Azure-Samples/cognitive-services-sample-data-files/master/Face/images/detection2.jpg'
 # Maximum image size
@@ -38,7 +32,7 @@ BOTTOM_MARGIN_MAX = 0.75
 LEFT_MARGIN_MAX = 1.5
 RIGHT_MARGIN_MAX = 1.5
 
-print("Sample code for portrait processing with Azure Face API and Background Removal API.")
+print("Sample code for portrait processing with Azure Face API and Background Removal.")
 
 # Read image from URL
 response = None
@@ -139,35 +133,15 @@ with Image.open(response.raw) as image:
     if number_of_faces != 0:
         # crop the face
         image = image.crop((crop_left, crop_top, crop_right, crop_bottom))
-        crop_memory_stream = io.BytesIO()
-        image.save(crop_memory_stream, format='jpeg', quality=JPEG_QUALITY)
         
         # remove the background
-        url = f"{BACKGROUND_ENDPOINT}computervision/imageanalysis:segment?api-version={BACKGROUND_REMOVAL_API_VERSION}&mode={FOREGROUND_MATTING_MODE}"
-        headers = {
-            'Content-Type': 'application/octet-stream',
-            'Ocp-Apim-Subscription-Key': BACKGROUND_API_KEY
-        }
-        crop_memory_stream.seek(0)
-        response = None
-        try:
-            response = requests.post(url, data=crop_memory_stream, headers=headers)
-            response.raise_for_status()
-        except requests.RequestException as e:
-            print(f"Background removal error: {e}")
-        
-        # merge the image with the foreground matting
-        if response is not None:
-            foreground_matting_image = Image.open(io.BytesIO(response.content))
-            foreground_matting_image = foreground_matting_image.convert('L')
-            image.putalpha(foreground_matting_image)
-            image.show()
-            wait = input("press ENTER to continue after viewing the portrait image.")
-            foreground_matting_image.close()
-        else:
-            print("Background removal failed. No portrait image is generated.")
+        foreground_matting_image = BiRefNet().predict(image)
 
-        crop_memory_stream.close()
+        # merge the image with the foreground matting
+        image.putalpha(foreground_matting_image)
+        image.show()
+        wait = input("press ENTER to continue after viewing the portrait image.")
+        foreground_matting_image.close()
     else:
         print("No face is detect. No portrait image is generated.")
 
