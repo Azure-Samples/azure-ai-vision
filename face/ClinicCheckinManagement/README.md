@@ -1,5 +1,5 @@
 
-## Clinic Person Management
+## Clinic Checkin Management
 
 The script is designed to automate the management of patient face detection, identification, and enrollment in a clinic system that uses Azure's Dynamic Person Groups. The goal is to ensure that each patient's face is efficiently recognized and linked to both daily and clinic-specific dynamic person groups, improving the accuracy of face identification and reducing redundancies. The system operates with **No Training Required**, allowing faster setup and updates, and eliminates the need for buffer groups, simplifying group management with **No Buffer Groups**.
 
@@ -8,9 +8,9 @@ The script is designed to automate the management of patient face detection, ide
 - Person are created and added into DynamicPersonGroup by reference.
 - Clinic: Each clinic will have its own group.
 - Daily Group: A smaller, temporary group for the daily visit list, nested within the larger - clinic group.
-![clinic_person_management_example.jpg](clinic_person_management_example.jpg)
+![clinic_checkin_management_example.jpg](clinic_checkin_management_example.jpg)
 #### Workflow
-![clinic_person_management_workflow.jpg](clinic_person_management_workflow.jpg)
+![clinic_checkin_management_workflow.jpg](clinic_checkin_management_workflow.jpg)
 
 ### Key Features
 
