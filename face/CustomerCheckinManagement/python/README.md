@@ -1,14 +1,14 @@
 
 # Introduction
 
-This repository contains a Python script that demonstrates how to manage patient face enrollment, identification, and dynamic person group linking using Azure Face services. It simplifies the management of persons in clinics by utilizing dynamic person groups for both daily and clinic-specific tasks.
-- The script automates the creation of persons, enrollment of faces, and linking them to dynamic person groups without requiring a training step.
-- It handles face identification across dynamic person groups, ensuring that persons are correctly referenced in both daily and clinic groups.
+This repository contains a Python script that demonstrates how to manage customer face enrollment, identification, and dynamic person group linking using Azure Face services. It streamlines the management of customers by leveraging dynamic person groups for both daily and location-specific tasks.
+- The script automates the creation of customer profiles, face enrollment, and linking them to dynamic person groups without requiring a training step.
+- It manages face identification across dynamic groups, ensuring that customers are properly referenced in both daily and location-based groups.
 
 ## Contents
 | Notebook | Description | Type |  
 |----------|-------------|------------|
-| [Clinic Checkin Management](clinic_checkin_management.ipynb) | This script enrolls patient faces, identifies persons in daily and clinic-specific dynamic person groups, and links them by reference for simplified management. | Enrollment/Identification |
+| [Customer Checkin Management](customer_checkin_management.ipynb) | This script enrolls customer faces, identifies persons in daily and location-specific dynamic person groups, and links them by reference for simplified management. | Enrollment/Identification |
 
 ## Shared Functions
 
