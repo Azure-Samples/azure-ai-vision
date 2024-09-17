@@ -1,10 +1,9 @@
 
 # Introduction
 
-This repository provides sample Jupyter notebooks showcasing the usage of the PersonDirectory data structure in the Azure Face service for face enrollment and recognition. 
+This repository provides sample Jupyter notebooks showcasing the usage of the Dynamic Person Group in the Azure Face service for face enrollment and recognition. 
 - The face enrollment process covers creating a person, adding faces to a person, and forming a dynamic person group. 
 - For recognition, the notebooks illustrate how to recognize faces within a dynamic person group or from a specific list of persons. 
-- For more details on the PersonDirectory data structure, see this [document](https://learn.microsoft.com/en-us/azure/ai-services/computer-vision/how-to/use-persondirectory).
 
 ## Contents
 | Notebook | Description | Type |  

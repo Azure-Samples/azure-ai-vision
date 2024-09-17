@@ -1,18 +1,18 @@
 
-## Enroll and Recognize Persons
+## Person Profile Registration
 
-This repository contains scripts demonstrating how to enroll faces for each person from directories of images and recognize new persons from images using the PersonDirectory data structure.
+This repository contains scripts demonstrating how to enroll faces for each person from directories of images and recognize new persons from images using the Dynamic Person Group.
 
 | Enrollment | Recognition |
 | :-: | :-: |
-| ![PD_enrollment.png](PD_enrollment.png) | ![PD_recognition.png](PD_recognition.png) |
+| ![DPG_enrollment.png](DPG_enrollment.png) | ![DPG_recognition.png](DPG_recognition.png) |
 
 
 ### Key Features
 
-* Learn how to enroll persons with faces from images in the PersonDirectory data structure.
+* Learn how to enroll persons with faces from images.
 * Create and manage dynamic person groups.
-* Recognize faces against a dynamic person group or a list of persons
+* Recognize faces against a dynamic person group or a list of persons.
 
 ### Steps Involved
 
