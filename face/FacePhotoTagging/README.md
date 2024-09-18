@@ -1,7 +1,7 @@
 
 ## Face Photo Tagging
 
-This repository contains scripts demonstrating how to enroll faces for each person from directories of images and tag persons for new input images using the Dynamic Person Group.
+This repository contains scripts demonstrating how to enroll faces for each person from directories of images and tag faces for new input images using the Dynamic Person Group.
 
 | Enrollment | Tagging |
 | :-: | :-: |
@@ -12,7 +12,7 @@ This repository contains scripts demonstrating how to enroll faces for each pers
 
 * Learn how to enroll persons with faces from images.
 * Create and manage dynamic person groups.
-* Tag persons by matching faces against a dynamic person group or a list of persons.
+* Tag faces by matching them against a dynamic person group or a list of persons.
 
 ### Steps Involved
 
@@ -26,5 +26,7 @@ This repository contains scripts demonstrating how to enroll faces for each pers
     * Filter out low quality faces.
     * Enroll multiple medium/high quality faces per person from each subfolder.
     * Create a dynamic person group.
-* Recognize Faces
-    * Recognize the enrolled persons using a test image.
+* Tag Faces for Input Images
+    * Detect faces in a new input image.
+    * Match the detected face against the enrolled faces in the dynamic person group.
+    * Tag the face corresponding to the best match.

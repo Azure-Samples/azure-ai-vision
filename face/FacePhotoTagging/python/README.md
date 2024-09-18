@@ -1,16 +1,16 @@
 
 # Introduction
 
-This repository provides sample Jupyter notebooks showcasing the usage of the Dynamic Person Group in the Azure Face service for face enrollment and recognition. 
-- The face enrollment process covers creating a person, adding faces to a person, and forming a dynamic person group. 
-- For recognition, the notebooks illustrate how to recognize faces within a dynamic person group or from a specific list of persons. 
+This repository provides sample Jupyter notebooks showcasing the usage of the Dynamic Person Group in the Azure Face service for face enrollment and tagging.
+- The face enrollment process covers creating a person, adding faces to a person, and forming a dynamic person group.
+- For tagging, the notebooks illustrate how to tag faces within a dynamic person group or from a specific list of persons.
 
 ## Contents
 | Notebook | Description | Type |  
 |----------|-------------|------------|
 | [Enroll persons with single face](enroll_single_face_per_person.ipynb) | The application enrolls one face for each person from a directory of images, with each image containing a different person. | Enrollment |
 | [Enroll persons with multiple faces](enroll_multiple_faces_per_person.ipynb) | The application enrolls multiple faces for each person from a directory where each subfolder represents a different person. | Enrollment |
-| [Recognize persons](recognize_persons.ipynb) |  The application recognizes persons against a dynamic person group/a specific list of persons | Recognition |
+| [Tag faces](tag_faces.ipynb) |  The application tags faces against a dynamic person group/a specific list of persons | Tagging |
 
 ## Shared Functions
 
