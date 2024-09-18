@@ -1,18 +1,18 @@
 
-## Person Profile Registration
+## Face Photo Tagging
 
-This repository contains scripts demonstrating how to enroll faces for each person from directories of images and recognize new persons from images using the Dynamic Person Group.
+This repository contains scripts demonstrating how to enroll faces for each person from directories of images and tag persons for new input images using the Dynamic Person Group.
 
-| Enrollment | Recognition |
+| Enrollment | Tagging |
 | :-: | :-: |
-| ![DPG_enrollment.png](DPG_enrollment.png) | ![DPG_recognition.png](DPG_recognition.png) |
+| ![DPG_enrollment.png](DPG_enrollment.png) | ![DPG_tagging.png](DPG_tagging.png) |
 
 
 ### Key Features
 
 * Learn how to enroll persons with faces from images.
 * Create and manage dynamic person groups.
-* Recognize faces against a dynamic person group or a list of persons.
+* Tag persons by matching faces against a dynamic person group or a list of persons.
 
 ### Steps Involved
 
