@@ -1,7 +1,7 @@
 
 ## Customer Checkin Management
 
-The script is designed to automate the management of customer face detection, identification, and enrollment in a system that utilizes Azure's Dynamic Person Groups. The objective is to ensure that each customer's face is efficiently recognized and associated with both daily and location-specific dynamic person groups, enhancing the accuracy of face identification while minimizing redundancies.
+This sample code is designed to manage customer check-ins using facial recognition technology. It handles face enrollment and identification by utilizing PersonDirectory, adding customers into both daily and location-specific dynamic person groups. This ensures accurate and efficient recognition during the check-in process.
 
 ### Example Scenario (Clinic)
 - Person are created and added into DynamicPersonGroup by reference.
