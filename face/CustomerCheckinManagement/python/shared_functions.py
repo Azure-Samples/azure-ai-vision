@@ -27,10 +27,10 @@ def get_image_dimensions(image_path):
     with Image.open(image_path) as img:
         return img.width, img.height
     
-def check_operation_status(subscription_key, operation_location):
+def check_operation_status(subscription_key, operation_location, injection_header=None):
     headers = {
         'Ocp-Apim-Subscription-Key': subscription_key,
-        'X-MS-AZSDK-Telemetry': 'sample=enroll-faces-person-directory'
+        'X-MS-AZSDK-Telemetry': injection_header,
     }
     
     while True:
@@ -59,10 +59,12 @@ def add_person_face(subscription_key, endpoint, image_path, person_id, injection
         
     faces = detect_faces(subscription_key, endpoint, image_path, injection_header)
     if len(faces) == 0:
-        return "No faces detected in the image."
+        print("No faces detected in the image.")
+        return None
     else:
         if quality_filter and faces[0].face_attributes.quality_for_recognition == QualityForRecognition.LOW:
-            return "Face quality is too low. Please use a different image."
+            print("Face quality is too low. Please use a different image.")
+            return None
 
     if len(faces) > 1:
         image_width, image_height = get_image_dimensions(image_path)
@@ -79,15 +81,18 @@ def add_person_face(subscription_key, endpoint, image_path, person_id, injection
         if response.status_code == 202:
             operation_location = response.headers.get('Operation-Location')
             if operation_location:
-                if check_operation_status(subscription_key, operation_location):
+                if check_operation_status(subscription_key, operation_location, injection_header):
                     persisted_face_id = response.json()['persistedFaceId']
                     return persisted_face_id
                 else:
-                    return "Failed to add face."
+                    print ("Failed to add face.")
+                    return None
             else:
                 print("No Operation-Location header found in the response.")
+                return None
         else:
-            return f"Failed to add face: {response.json()}"
+            print(f"Failed to add face: {response.json()}")
+            return None
         
 # Function to create a new person
 def create_person(subscription_key, endpoint, person_name = None, injection_header=None):
@@ -107,7 +112,7 @@ def create_person(subscription_key, endpoint, person_name = None, injection_head
         if response.status_code == 202:
             operation_location = response.headers.get('Operation-Location')
             if operation_location:
-                if check_operation_status(subscription_key, operation_location):
+                if check_operation_status(subscription_key, operation_location, injection_header):
                     person_id = response.json()['personId']
                     return person_id
                 else:
@@ -137,7 +142,7 @@ def delete_person(subscription_key, endpoint, person_id, injection_header=None):
         if response.status_code == 202:
             operation_location = response.headers.get('Operation-Location')
             if operation_location:
-                if check_operation_status(subscription_key, operation_location):
+                if check_operation_status(subscription_key, operation_location, injection_header):
                     return True
                 else:
                     print ("Failed to delete person.")
@@ -156,12 +161,11 @@ def delete_person(subscription_key, endpoint, person_id, injection_header=None):
 def identify_faces(subscription_key, endpoint, face_id, dynamic_person_group_id=None, injection_header=None):
     headers = {
         'Ocp-Apim-Subscription-Key': subscription_key,
-        'Content-Type': 'application/octet-stream',
+        'Content-Type': 'application/json',
         'X-MS-AZSDK-Telemetry': injection_header
     }
 
     identify_url = endpoint + "/face/v1.1-preview.1/identify"
-    headers['Content-Type'] = 'application/json'
     body = {
         'faceIds': [face_id],
         'maxNumOfCandidatesReturned': 1,
@@ -198,17 +202,8 @@ def create_dynamic_person_group(subscription_key, endpoint, dynamic_person_group
         response = requests.put(create_DPG_url, headers=headers, json=body)
         response.raise_for_status()
 
-        if response.status_code == 202:
-            operation_location = response.headers.get('Operation-Location')
-            if operation_location:
-                if check_operation_status(subscription_key, operation_location):
-                    return True
-                else:
-                    print ("Failed to create dynamic person group.")
-                    return False
-            else:
-                print("No Operation-Location header found in the response.")
-                return False
+        if response.status_code == 200:
+            return True
         else:
             print(f"Failed to create dynamic person group: {response.json()}")
             return False
@@ -230,7 +225,7 @@ def delete_dynamic_person_group(subscription_key, endpoint, dynamic_person_group
         if response.status_code == 202:
             operation_location = response.headers.get('Operation-Location')
             if operation_location:
-                if check_operation_status(subscription_key, operation_location):
+                if check_operation_status(subscription_key, operation_location, injection_header):
                     return True
                 else:
                     print ("Failed to delete dynamic person group.")
@@ -255,7 +250,11 @@ def check_dynamic_person_group_exists(subscription_key, endpoint, dynamic_person
     try:
         response = requests.get(check_DPG_url, headers=headers)
         response.raise_for_status()
-        return True
+        if response.status_code == 200:
+            return True
+        else:
+            print("Dynamic person group does not exist.")
+            return False
     except requests.exceptions.RequestException as e:
         print(f"Request failed: {e}")
         return False
@@ -280,7 +279,7 @@ def link_person_to_dynamic_person_group(subscription_key, endpoint, dynamic_pers
         if response.status_code == 202:
             operation_location = response.headers.get('Operation-Location')
             if operation_location:
-                if check_operation_status(subscription_key, operation_location):
+                if check_operation_status(subscription_key, operation_location, injection_header):
                     return True
                 else:
                     print ("Failed to create dynamic person group.")
