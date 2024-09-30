@@ -88,14 +88,14 @@ def add_person_face(subscription_key, endpoint, image_path, person_id, injection
                     persisted_face_id = response.json()['persistedFaceId']
                     return persisted_face_id
                 else:
-                    print ("Failed to add face.")
+                    print("Failed to add face.")
                     return None
             else:
                 print("No Operation-Location header found in the response.")
                 return None
         else:
             print(f"Failed to add face: {response.json()}")
-            return f"Failed to add face: {response.json()}"
+            return None
 
 # Function to delete a face from a person
 def delete_person_face(subscription_key, endpoint, person_id, face_id, injection_header=None):
@@ -114,7 +114,7 @@ def delete_person_face(subscription_key, endpoint, person_id, face_id, injection
                 if check_operation_status(subscription_key, operation_location):
                     return True
                 else:
-                    print ("Failed to delete face.")
+                    print("Failed to delete face.")
                     return False
             else:
                 print("No Operation-Location header found in the response.")
@@ -148,7 +148,7 @@ def create_person(subscription_key, endpoint, person_name, injection_header=None
                     person_id = response.json()['personId']
                     return person_id
                 else:
-                    print ("Failed to create person.")
+                    print("Failed to create person.")
                     return None
             else:
                 print("No Operation-Location header found in the response.")
@@ -177,7 +177,7 @@ def delete_person(subscription_key, endpoint, person_id, injection_header=None):
                 if check_operation_status(subscription_key, operation_location):
                     return True
                 else:
-                    print ("Failed to delete person.")
+                    print("Failed to delete person.")
                     return False
             else:
                 print("No Operation-Location header found in the response.")
@@ -277,7 +277,7 @@ def create_dynamic_person_group(subscription_key, endpoint, dynamic_person_group
                 if check_operation_status(subscription_key, operation_location):
                     return True
                 else:
-                    print ("Failed to create dynamic person group.")
+                    print("Failed to create dynamic person group.")
                     return False
             else:
                 print("No Operation-Location header found in the response.")
@@ -306,7 +306,7 @@ def delete_dynamic_person_group(subscription_key, endpoint, dynamic_person_group
                 if check_operation_status(subscription_key, operation_location):
                     return True
                 else:
-                    print ("Failed to delete dynamic person group.")
+                    print("Failed to delete dynamic person group.")
                     return False
             else:
                 print("No Operation-Location header found in the response.")
