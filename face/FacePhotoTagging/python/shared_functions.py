@@ -4,6 +4,9 @@ from azure.core.credentials import AzureKeyCredential
 from azure.ai.vision.face import FaceClient
 from azure.ai.vision.face.models import FaceDetectionModel, FaceRecognitionModel, FaceAttributeTypeRecognition04, QualityForRecognition
 
+# Updated API version
+api_version = 'v1.2-preview.1'
+
 def detect_faces(subscription_key, endpoint, image_path, injection_header=None):
     with FaceClient(endpoint, AzureKeyCredential(subscription_key), headers = {"X-MS-AZSDK-Telemetry": injection_header}) as face_client:
         with open(image_path, 'rb') as image_data:
@@ -59,10 +62,12 @@ def add_person_face(subscription_key, endpoint, image_path, person_id, injection
         
     faces = detect_faces(subscription_key, endpoint, image_path, injection_header)
     if len(faces) == 0:
-        return "No faces detected in the image."
+        print("No faces detected in the image.")
+        return None
     else:
         if quality_filter and faces[0].face_attributes.quality_for_recognition == QualityForRecognition.LOW:
-            return "Face quality is too low. Please use a different image."
+            print("Face quality is too low. Please use a different image.")
+            return None
 
     if len(faces) > 1:
         image_width, image_height = get_image_dimensions(image_path)
@@ -73,7 +78,7 @@ def add_person_face(subscription_key, endpoint, image_path, person_id, injection
     else:
         print(f"One face detected. Adding to the target.")
 
-    add_face_url = endpoint + f"/face/v1.1-preview.1/persons/{person_id}/recognitionModels/recognition_04/persistedFaces"
+    add_face_url = endpoint + f"/face/{api_version}/persons/{person_id}/recognitionModels/recognition_04/persistedFaces"
     with open(image_path, 'rb') as image_data:
         response = requests.post(add_face_url, params=params, headers=headers, data=image_data)
         if response.status_code == 202:
@@ -83,15 +88,47 @@ def add_person_face(subscription_key, endpoint, image_path, person_id, injection
                     persisted_face_id = response.json()['persistedFaceId']
                     return persisted_face_id
                 else:
-                    return "Failed to add face."
+                    print("Failed to add face.")
+                    return None
             else:
                 print("No Operation-Location header found in the response.")
+                return None
         else:
-            return f"Failed to add face: {response.json()}"
+            print(f"Failed to add face: {response.json()}")
+            return None
+
+# Function to delete a face from a person
+def delete_person_face(subscription_key, endpoint, person_id, face_id, injection_header=None):
+    delete_face_url = f"{endpoint}/face/{api_version}/persons/{person_id}/recognitionModels/recognition_04/persistedFaces/{face_id}"
+    headers = {
+        'Ocp-Apim-Subscription-Key': subscription_key,
+        'X-MS-AZSDK-Telemetry': injection_header
+    }
+    try:
+        response = requests.delete(delete_face_url, headers=headers)
+        response.raise_for_status()
+
+        if response.status_code == 202:
+            operation_location = response.headers.get('Operation-Location')
+            if operation_location:
+                if check_operation_status(subscription_key, operation_location):
+                    return True
+                else:
+                    print("Failed to delete face.")
+                    return False
+            else:
+                print("No Operation-Location header found in the response.")
+                return False
+        else:
+            print(f"Failed to delete face: {response.json()}")
+            return False
+    except requests.exceptions.RequestException as e:
+        print(f"Request failed: {e}")
+        return False
         
 # Function to create a new person
 def create_person(subscription_key, endpoint, person_name, injection_header=None):
-    create_person_url = f"{endpoint}/face/v1.1-preview.1/persons"
+    create_person_url = f"{endpoint}/face/{api_version}/persons"
     headers = {
         'Ocp-Apim-Subscription-Key': subscription_key,
         'Content-Type': 'application/json',
@@ -111,7 +148,7 @@ def create_person(subscription_key, endpoint, person_name, injection_header=None
                     person_id = response.json()['personId']
                     return person_id
                 else:
-                    print ("Failed to create person.")
+                    print("Failed to create person.")
                     return None
             else:
                 print("No Operation-Location header found in the response.")
@@ -125,7 +162,7 @@ def create_person(subscription_key, endpoint, person_name, injection_header=None
 
 # Function to delete a person
 def delete_person(subscription_key, endpoint, person_id, injection_header=None):
-    delete_person_url = f"{endpoint}/face/v1.1-preview.1/persons/{person_id}"
+    delete_person_url = f"{endpoint}/face/{api_version}/persons/{person_id}"
     headers = {
         'Ocp-Apim-Subscription-Key': subscription_key,
         'X-MS-AZSDK-Telemetry': injection_header
@@ -140,7 +177,7 @@ def delete_person(subscription_key, endpoint, person_id, injection_header=None):
                 if check_operation_status(subscription_key, operation_location):
                     return True
                 else:
-                    print ("Failed to delete person.")
+                    print("Failed to delete person.")
                     return False
             else:
                 print("No Operation-Location header found in the response.")
@@ -162,7 +199,7 @@ def identify_faces(subscription_key, endpoint, image_path, person_ids=None, dyna
     faces = detect_faces(subscription_key, endpoint, image_path, injection_header)
     if len(faces) == 0:
         print("No faces detected in the image.")
-        return
+        return None
     face_ids = []
     face_details = []
 
@@ -173,7 +210,7 @@ def identify_faces(subscription_key, endpoint, image_path, person_ids=None, dyna
             'bbox': face['faceRectangle']
         })
     
-    identify_url = endpoint + "/face/v1.1-preview.1/identify"
+    identify_url = endpoint + "/face/{api_version}/identify"
     headers['Content-Type'] = 'application/json'
     body = {
         'faceIds': face_ids,
@@ -186,7 +223,7 @@ def identify_faces(subscription_key, endpoint, image_path, person_ids=None, dyna
         body['dynamicPersonGroupId'] = dynamic_person_group_id
     else:
         print("Person IDs or Dynamic Person Group ID must be provided.")
-        return
+        return None
 
     response = requests.post(identify_url, headers=headers, json=body)
     response.raise_for_status()
@@ -201,7 +238,7 @@ def identify_faces(subscription_key, endpoint, image_path, person_ids=None, dyna
             confidence = candidate['confidence']
 
             # Retrieve person details to get the name
-            person_details_url = f"{endpoint}/face/v1.1-preview.1/persons/{person_id}"
+            person_details_url = f"{endpoint}/face/{api_version}/persons/{person_id}"
             person_response = requests.get(person_details_url, headers=headers)
             person_response.raise_for_status()
             person_data = person_response.json()
@@ -219,7 +256,7 @@ def identify_faces(subscription_key, endpoint, image_path, person_ids=None, dyna
 
 # Function to create a dynamic person group
 def create_dynamic_person_group(subscription_key, endpoint, dynamic_person_group_id, person_ids, injection_header=None):
-    create_DPG_url = f"{endpoint}/face/v1.1-preview.1/dynamicpersongroups/{dynamic_person_group_id}"
+    create_DPG_url = f"{endpoint}/face/{api_version}/dynamicpersongroups/{dynamic_person_group_id}"
     headers = {
         'Ocp-Apim-Subscription-Key': subscription_key,
         'Content-Type': 'application/json',
@@ -240,7 +277,7 @@ def create_dynamic_person_group(subscription_key, endpoint, dynamic_person_group
                 if check_operation_status(subscription_key, operation_location):
                     return True
                 else:
-                    print ("Failed to create dynamic person group.")
+                    print("Failed to create dynamic person group.")
                     return False
             else:
                 print("No Operation-Location header found in the response.")
@@ -254,7 +291,7 @@ def create_dynamic_person_group(subscription_key, endpoint, dynamic_person_group
 
 # Function to delete a dynamic person group
 def delete_dynamic_person_group(subscription_key, endpoint, dynamic_person_group_id, injection_header=None):
-    delete_DPG_url = f"{endpoint}/face/v1.1-preview.1/dynamicpersongroups/{dynamic_person_group_id}"
+    delete_DPG_url = f"{endpoint}/face/{api_version}/dynamicpersongroups/{dynamic_person_group_id}"
     headers = {
         'Ocp-Apim-Subscription-Key': subscription_key,
         'X-MS-AZSDK-Telemetry': injection_header
@@ -269,7 +306,7 @@ def delete_dynamic_person_group(subscription_key, endpoint, dynamic_person_group
                 if check_operation_status(subscription_key, operation_location):
                     return True
                 else:
-                    print ("Failed to delete dynamic person group.")
+                    print("Failed to delete dynamic person group.")
                     return False
             else:
                 print("No Operation-Location header found in the response.")

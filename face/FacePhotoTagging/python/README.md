@@ -1,7 +1,7 @@
 
 # Introduction
 
-This repository provides sample Jupyter notebooks showcasing the usage of the Dynamic Person Group in the Azure Face service for face enrollment and tagging.
+This repository provides sample Jupyter notebooks showcasing the usage of the PersonDirectory data structure in the Azure Face service for face enrollment and tagging.
 - The face enrollment process covers creating a person, adding faces to a person, and forming a dynamic person group.
 - For tagging, the notebooks illustrate how to tag faces within a dynamic person group or from a specific list of persons.
 
