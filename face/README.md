@@ -8,15 +8,18 @@
 
 Explore our samples and discover the things you can build with face service.
 
-| Project | Description | C# | Py | JS | Java |
+| Scenario | Description | C# | Py | JS | Java |
+| :- | :- | :- | :- | :- | :- |
+| [CustomerCheckinManagement](./Scenario-CustomerCheckinManagement) | Manage customer check-ins by leveraging face enrollment and identification. | | ✅ | | |
+| [FacePhotoTagging](./Scenario-FacePhotoTagging) | Enroll each person’s faces from image directories and tag faces for new input images. | | ✅ | | |
+| [PortraitProcessing](./Scenario-PortraitProcessing) | Make a portrait image out of an original image. | ✅ | ✅ | | ✅ |
+
+| Project & Utility | Description | C# | Py | JS | Java |
 | :- | :- | :- | :- | :- | :- |
 | [AndroidDetect](./AndroidDetect) | Detect and frame faces in an image on Android. | | | | ✅ |
-| [CustomerCheckinManagement](./CustomerCheckinManagement) | Manage customer check-ins by leveraging face enrollment and identification. | | ✅ | | |
 | [DemoWPF](./DemoWPF) | Run face detection, face grouping, finding similar faces, and face verification in Windows Presentation Foundation. | ✅ | | | |
 | [EnrollWithReactNative](https://github.com/Azure-Samples/cognitive-services-FaceAPIEnrollmentSample) | Get started with the sample face enrollment application for Android/iOS. | | | ✅ | |
-| [FacePhotoTagging](./FacePhotoTagging) | Enroll each person’s faces from image directories and tag faces for new input images. | | ✅ | | |
 | [FindFaces](./FindFaces) | Create and manage face collections, add faces, and verify faces within images. | | ✅ | | |
-| [PortraitProcessing](./PortraitProcessing) | Make a portrait image out of an original image. | ✅ | ✅ | | ✅ |
 | [UnifiedFaceCollection](./UnifiedFaceCollection) | Provide a unified interface for managing both face and person, using face lists and person groups. | | ✅ | | |
 
 > [!NOTE]
