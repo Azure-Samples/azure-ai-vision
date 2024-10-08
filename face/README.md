@@ -11,7 +11,7 @@ Explore our samples and discover the things you can build with face service.
 | Scenario | Description | C# | Py | JS | Java |
 | :- | :- | :- | :- | :- | :- |
 | [CustomerCheckinManagement](./Scenario-CustomerCheckinManagement) | Manage customer check-ins by leveraging face enrollment and identification. | | ✅ | | |
-| [FacePhotoTagging](./Scenario-FacePhotoTagging) | Enroll each person’s faces from image directories and tag faces for new input images. | | ✅ | | |
+| [FacePhotoTagging](./Scenario-FacePhotoTagging) | Enroll each person’s faces from images and tag faces for new input images. | | ✅ | | |
 | [PortraitProcessing](./Scenario-PortraitProcessing) | Make a portrait image out of an original image. | ✅ | ✅ | | ✅ |
 
 | Project & Utility | Description | C# | Py | JS | Java |
