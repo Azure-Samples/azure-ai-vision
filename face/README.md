@@ -27,10 +27,9 @@ Explore our samples and discover the things you can build with face service.
 >
 > | Platform | Sample | Dependency (Client SDK API Reference) |
 > | :- | :- | :- |
-> | Android | [FaceLivenessDetectorSample-Android](https://aka.ms/azure-ai-vision-face-liveness-client-sdk-android-readme) | [API-Reference](
-https://aka.ms/azure-ai-vision-face-liveness-client-sdk-android-api-reference) |
-> | iOS | [FaceLivenessDetectorSample-iOS](https://aka.ms/azure-ai-vision-face-liveness-client-sdk-ios-readme) | [API-Reference](https://aka.ms/azure-ai-vision-face-liveness-client-sdk-ios-api-reference) |
-> | Web | [FaceLivenessDetectorSample-Web](https://aka.ms/azure-ai-vision-face-liveness-client-sdk-web-readme) | [API-Reference](https://aka.ms/azure-ai-vision-face-liveness-client-sdk-web-api-reference) |
+> | Android | [FaceLivenessDetectorSample](https://aka.ms/azure-ai-vision-face-liveness-client-sdk-android-readme) | [azure-ai-vision-common & azure-ai-vision-faceanalyzer](https://aka.ms/azure-ai-vision-face-liveness-client-sdk-android-api-reference) |
+> | iOS | [FaceAnalyzerSample](https://aka.ms/azure-ai-vision-face-liveness-client-sdk-ios-readme) | [AzureAIVisionCore & AzureAIVisionFace](https://aka.ms/azure-ai-vision-face-liveness-client-sdk-ios-api-reference) |
+> | Web | [azure-ai-vision-sdk/samples/web](https://aka.ms/azure-ai-vision-face-liveness-client-sdk-web-readme) | [azure-ai-vision-face-ui (FaceLivenessDetector)](https://aka.ms/azure-ai-vision-face-liveness-client-sdk-web-api-reference) |
 
 
 ### Documentation
