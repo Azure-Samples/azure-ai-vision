@@ -25,11 +25,11 @@ Explore our samples and discover the things you can build with face service.
 > [!NOTE]
 > The [face liveness detection solution](https://learn.microsoft.com/azure/ai-services/computer-vision/tutorials/liveness) requires additional mobile/web SDKs to start the camera, guide the end-user in adjusting their position, and compose the liveness payload. See the frontend app integration samples:
 >
-> | Platform | Sample | Dependency (Client SDK) |
+> | Platform | Sample | Dependency (Client SDK API Reference) |
 > | :- | :- | :- |
-> | Android | [azure-ai-vision-sdk/tree/main/samples/kotlin/face/FaceAnalyzerSample](https://github.com/Azure-Samples/azure-ai-vision-sdk/tree/main/samples/kotlin/face/FaceAnalyzerSample) | [azure-ai-vision-faceanalyzer](https://azure.github.io/azure-sdk-for-android/azure-ai-vision-faceanalyzer/com/azure/android/ai/vision/faceanalyzer/package-summary.html) |
-> | iOS | [azure-ai-vision-sdk/tree/main/samples/swift/face/FaceAnalyzerSample](https://github.com/Azure-Samples/azure-ai-vision-sdk/tree/main/samples/swift/face/FaceAnalyzerSample) | [AzureAIVisionFace](https://azure.github.io/azure-sdk-for-ios/AzureAIVisionFace/index.html) |
-> | Web | [azure-ai-vision-sdk/tree/main/samples/web](https://github.com/Azure-Samples/azure-ai-vision-sdk/tree/main/samples/web) | azure-ai-vision-faceanalyzer |
+> | Android | [FaceLivenessDetectorSample](https://aka.ms/azure-ai-vision-face-liveness-client-sdk-android-readme) | [azure-ai-vision-common & azure-ai-vision-faceanalyzer](https://aka.ms/azure-ai-vision-face-liveness-client-sdk-android-api-reference) |
+> | iOS | [FaceAnalyzerSample](https://aka.ms/azure-ai-vision-face-liveness-client-sdk-ios-readme) | [AzureAIVisionCore & AzureAIVisionFace](https://aka.ms/azure-ai-vision-face-liveness-client-sdk-ios-api-reference) |
+> | Web | [azure-ai-vision-sdk/samples/web](https://aka.ms/azure-ai-vision-face-liveness-client-sdk-web-readme) | [azure-ai-vision-face-ui (FaceLivenessDetector)](https://aka.ms/azure-ai-vision-face-liveness-client-sdk-web-api-reference) |
 
 
 ### Documentation
