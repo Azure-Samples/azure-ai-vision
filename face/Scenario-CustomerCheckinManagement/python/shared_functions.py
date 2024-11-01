@@ -12,8 +12,8 @@ def detect_faces(subscription_key, endpoint, image_path, injection_header=None):
         with open(image_path, 'rb') as image_data:
             detected_faces = face_client.detect(
                     image_content=image_data.read(),
-                    detection_model=FaceDetectionModel.DETECTION_03,
-                    recognition_model=FaceRecognitionModel.RECOGNITION_04,
+                    detection_model=FaceDetectionModel.DETECTION03,
+                    recognition_model=FaceRecognitionModel.RECOGNITION04,
                     return_face_id=True,
                     return_face_attributes=[FaceAttributeTypeRecognition04.QUALITY_FOR_RECOGNITION]
                 )
