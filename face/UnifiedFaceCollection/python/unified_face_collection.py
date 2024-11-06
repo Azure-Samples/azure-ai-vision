@@ -1,117 +1,131 @@
-import requests
-import time
 import json
-from shared_functions import detect_faces, enlarge_bounding_box, get_image_dimensions
+from PIL import Image
+from azure.core.credentials import AzureKeyCredential
+from azure.ai.vision.face import FaceClient, FaceAdministrationClient
+from azure.ai.vision.face.models import FaceDetectionModel, FaceRecognitionModel
 
 class UnifiedFaceCollection:
     def __init__(self, subscription_key, endpoint, face_collection_id, injection_header):
-        self.subscription_key = subscription_key
-        self.endpoint = endpoint
-        self.face_api_url = f"{self.endpoint}/face/v1.0"
+        self.face_client = FaceClient(endpoint, AzureKeyCredential(subscription_key), headers = {"X-MS-AZSDK-Telemetry": injection_header})
+        self.face_admin_client = FaceAdministrationClient(endpoint, AzureKeyCredential(subscription_key), headers = {"X-MS-AZSDK-Telemetry": injection_header})
         self.face_collection_id = face_collection_id
         self.large_face_list_id = face_collection_id + "_face_list"
         self.large_person_group_id = face_collection_id + "_person_group"
-        self.injection_header = injection_header
-        self.headers = {
-            'Ocp-Apim-Subscription-Key': self.subscription_key,
-            'Content-Type': 'application/json',
-            'X-MS-AZSDK-Telemetry': injection_header
-        }
         self.create_collections()
+
+    def detect_faces(self, image_path):
+        with open(image_path, 'rb') as image_data:
+            detected_faces = self.face_client.detect(
+                    image_content=image_data.read(),
+                    detection_model=FaceDetectionModel.DETECTION03,
+                    recognition_model=FaceRecognitionModel.RECOGNITION04,
+                    return_face_id=True,
+            )
+        return detected_faces
+
+    def enlarge_bounding_box(self, face_rectangle, image_width, image_height, enlargement_factor=1.2):
+        left = max(0, face_rectangle['left'] - (face_rectangle['width'] * (enlargement_factor - 1) / 2))
+        top = max(0, face_rectangle['top'] - (face_rectangle['height'] * (enlargement_factor - 1) / 2))
+        width = min(image_width - left, face_rectangle['width'] * enlargement_factor)
+        height = min(image_height - top, face_rectangle['height'] * enlargement_factor)
+        return {'left': int(left), 'top': int(top), 'width': int(width), 'height': int(height)}
+
+    def get_image_dimensions(self, image_path):
+        with Image.open(image_path) as img:
+            return img.width, img.height
 
     def create_collections(self):
         # Create Large Face List
-        face_list_url = f"{self.face_api_url}/largefacelists/{self.large_face_list_id}"
-        face_list_response = requests.put(face_list_url, headers=self.headers, json={"name": self.face_collection_id + " Face List", "recognitionModel": "recognition_04"})
-        if face_list_response.status_code == 200:
-            print(f"Face list {self.large_face_list_id} created successfully.")
-        else:
-            print(face_list_response.json())
+        try :
+            self.face_admin_client.large_face_list.get(self.large_face_list_id)
+            print(f"Large Face List: {self.large_face_list_id} already exists.")
+        except Exception:
+            print(f"Creating Large Face List: {self.large_face_list_id}")
+            self.face_admin_client.large_face_list.create(
+                self.large_face_list_id,
+                name=self.face_collection_id + " Face List",
+                recognition_model=FaceRecognitionModel.RECOGNITION04
+            )
         
         # Create Large Person Group
-        person_group_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}"
-        person_group_response = requests.put(person_group_url, headers=self.headers, json={"name": self.face_collection_id + " Person Group", "recognitionModel": "recognition_04"})
-        if person_group_response.status_code == 200:
-            print(f"Person group {self.large_person_group_id} created successfully.")
-        else:
-            print(person_group_response.json())
+        try :
+            self.face_admin_client.large_person_group.get(self.large_person_group_id)
+            print(f"Large Person Group: {self.large_person_group_id} already exists.")
+        except Exception:
+            print(f"Creating Large Person Group: {self.large_person_group_id}")
+            self.face_admin_client.large_person_group.create(
+                self.large_person_group_id,
+                name=self.face_collection_id + " Person Group",
+                recognition_model=FaceRecognitionModel.RECOGNITION04
+            )
 
     def add_face(self, image_path, person_name=None):
-        add_face_headers = {
-            'Ocp-Apim-Subscription-Key': self.subscription_key,
-            'Content-Type': 'application/octet-stream',
-            'X-MS-AZSDK-Telemetry': self.injection_header
-        }
-        params = {
-            'detectionModel': 'detection_03'
-        }
-        
-        faces = detect_faces(self.subscription_key, self.endpoint, image_path, self.injection_header)
+        faces = self.detect_faces(image_path)
+        target_face = None
         if len(faces) == 0:
             return "No faces detected in the image."
         elif len(faces) > 1:
-            image_width, image_height = get_image_dimensions(image_path)
+            image_width, image_height = self.get_image_dimensions(image_path)
             print(f"Multiple faces detected. Using the first face (largest face) for adding to the collection.")
-            face_rectangle = enlarge_bounding_box(faces[0]['faceRectangle'], image_width, image_height)
-            params['targetFace'] = f"{face_rectangle['left']},{face_rectangle['top']},{face_rectangle['width']},{face_rectangle['height']}"
+            face_rectangle = self.enlarge_bounding_box(faces[0]['faceRectangle'], image_width, image_height)
+            target_face = [face_rectangle['left'],face_rectangle['top'],face_rectangle['width'], face_rectangle['height']]
         else:
             print(f"One face detected. Adding to the collection.")
         
         # Add face to Large Face List
-        face_list_url = f"{self.face_api_url}/largefacelists/{self.large_face_list_id}/persistedfaces"
         with open(image_path, 'rb') as image:
-            face_list_response = requests.post(face_list_url, params=params, headers=add_face_headers, data=image)
-            if face_list_response.status_code != 200:
-                return []
-        face_list_result = face_list_response.json()
-        persisted_face_id = face_list_result['persistedFaceId']
+            persisted_face_id = self.face_admin_client.large_face_list.add_face(
+                self.large_face_list_id,
+                image,
+                target_face=target_face,
+                detection_model=FaceDetectionModel.DETECTION03,
+                user_data=person_name
+            ).persisted_face_id
 
         if person_name:
             # Check if person exists
             person = self.get_person_by_name(person_name)
             if person is None:
                 # Create a new person if not exists
-                person = self.create_person(person_name)
-            person_id = person['personId']
+                person = self.face_admin_client.large_person_group.create_person(
+                    self.large_person_group_id,
+                    name=person_name
+                )
+            person_id = person.person_id
 
             # Add face to the created or existing person
             with open(image_path, 'rb') as image:
-                person_face_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons/{person['personId']}/persistedfaces"
-                person_face_response = requests.post(person_face_url, params=params, headers=add_face_headers, data=image)
-            
-            if person_face_response.status_code == 200:
-                person_face_result = person_face_response.json()
-                person_persisted_face_id = person_face_result['persistedFaceId']
+                person_persisted_face_id = self.face_admin_client.large_person_group.add_face(
+                    self.large_person_group_id,
+                    person_id,
+                    image,
+                    target_face=target_face,
+                    detection_model=FaceDetectionModel.DETECTION03,
+                ).persisted_face_id
+
                 # Update the userData field with the mapping in the Large Face List
                 user_data_face_list = {
                     "personId": person_id,
                     "personPersistedFaceId": person_persisted_face_id
                 }
                 user_data_face_list_json = json.dumps(user_data_face_list)
-
-                update_url_face_list = f"{self.face_api_url}/largefacelists/{self.large_face_list_id}/persistedfaces/{persisted_face_id}"
-                update_body_face_list = {
-                    "userData": user_data_face_list_json
-                }
-                update_response_face_list = requests.patch(update_url_face_list, headers=self.headers, json=update_body_face_list)
-                if update_response_face_list.status_code != 200:
-                    print("Failed to update userData for the face in the Large Face List.")
-                    return []
+                self.face_admin_client.large_face_list.update_face(
+                    self.large_face_list_id,
+                    persisted_face_id,
+                    user_data=user_data_face_list_json
+                )
 
                 # Update the userData field with the mapping in the Large Person Group
                 user_data_large_person_group = {
                     "persistedFaceId": persisted_face_id
                 }
                 user_data_large_person_group_json = json.dumps(user_data_large_person_group)
-
-                update_url_large_person_group = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons/{person_id}/persistedfaces/{person_persisted_face_id}"
-                update_body_large_person_group = {
-                    "userData": user_data_large_person_group_json
-                }
-                update_response_large_person_group = requests.patch(update_url_large_person_group, headers=self.headers, json=update_body_large_person_group)
-                if update_response_large_person_group.status_code != 200:
-                    print("Failed to update userData for the face in the Large Person Group.")
-                    return []
+                self.face_admin_client.large_person_group.update_face(
+                    self.large_person_group_id,
+                    person_id,
+                    person_persisted_face_id,
+                    user_data=user_data_large_person_group_json
+                )
 
                 return {
                     "face_list": {
@@ -121,19 +135,15 @@ class UnifiedFaceCollection:
                         "personId": person_id,
                     }
                 }
-            else:
-                return []
-        
-        return {"face_list": { "persistedFaceId": face_list_result['persistedFaceId'] }}
+
+        return {"face_list": { "persistedFaceId": persisted_face_id }}
 
     def remove_face(self, persisted_face_id):
-        face_list_url = f"{self.face_api_url}/largefacelists/{self.large_face_list_id}/persistedfaces/{persisted_face_id}"
-        face_list_response = requests.get(face_list_url, headers=self.headers)
-        if face_list_response.status_code != 200:
-            return False
-
-        face_data = face_list_response.json()
-        user_data = face_data.get("userData")
+        face_data  = self.face_admin_client.large_face_list.get_face(
+            large_face_list_id=self.large_face_list_id,
+            persisted_face_id=persisted_face_id
+        )
+        user_data = getattr(face_data, 'user_data', None)
         if not user_data:
             return False
 
@@ -143,27 +153,30 @@ class UnifiedFaceCollection:
 
         if person_id and person_persisted_face_id:
             # Remove face from Large Person Group
-            person_face_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons/{person_id}/persistedfaces/{person_persisted_face_id}"
-            person_face_response = requests.delete(person_face_url, headers=self.headers)
-            if person_face_response.status_code == 200:
-                # Check if the person has any faces left
-                person_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons/{person_id}"
-                person_response = requests.get(person_url, headers=self.headers)
-                if person_response.status_code == 200:
-                    person_data = person_response.json()
-                    if not person_data.get("persistedFaceIds"):
-                        # Delete the person if no faces are left
-                        print(f"Deleting the person as no faces are left.")
-                        delete_person_response = requests.delete(person_url, headers=self.headers)
-                        if delete_person_response.status_code != 200:
-                            return False
-            else:
-                return False
+            self.face_admin_client.large_person_group.delete_face(
+                large_person_group_id=self.large_person_group_id,
+                person_id=person_id,
+                persisted_face_id=person_persisted_face_id
+            )
+
+            # Check if the person has any faces left
+            person_data = self.face_admin_client.large_person_group.get_person(
+                large_person_group_id=self.large_person_group_id,
+                person_id=person_id
+            )
+            if not person_data.get("persistedFaceIds"):
+                # Delete the person if no faces are left
+                print(f"Deleting the person as no faces are left.")
+                self.face_admin_client.large_person_group.delete_person(
+                    large_person_group_id=self.large_person_group_id,
+                    person_id=person_id
+                )
 
         # Remove face from Large Face List
-        face_list_delete_response = requests.delete(face_list_url, headers=self.headers)
-        if face_list_delete_response.status_code != 200:
-            return False
+        self.face_admin_client.large_face_list.delete_face(
+            large_face_list_id=self.large_face_list_id,
+            persisted_face_id=persisted_face_id
+        )
 
         return True
 
@@ -175,40 +188,34 @@ class UnifiedFaceCollection:
         else:
             person = self.get_person_by_name(person_identifier)
             if person:
-                person_id = person['personId']
+                person_id = person.person_id
             else:
                 return False
 
         # Retrieve the person's faces from the person group
-        person_faces_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons/{person_id}"
-        person_faces_response = requests.get(person_faces_url, headers=self.headers)
-        if person_faces_response.status_code != 200:
-            return False
-
-        person_faces = person_faces_response.json()
-
+        person_faces = self.face_admin_client.large_person_group.get_person(
+            large_person_group_id=self.large_person_group_id,
+            person_id=person_id
+        )
         # Update userData in the Large Face List
-        for person_persisted_face_id in person_faces['persistedFaceIds']:
+        for person_persisted_face_id in person_faces.persisted_face_ids:
             # Retrieve userData from the face in the person group
-            person_face_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons/{person_id}/persistedfaces/{person_persisted_face_id}"
-            person_face_response = requests.get(person_face_url, headers=self.headers)
-            if person_face_response.status_code != 200:
-                continue
-
-            face_data = person_face_response.json()
-            user_data = face_data.get("userData")
+            face_data = self.face_admin_client.large_person_group.get_face(
+                large_person_group_id=self.large_person_group_id,
+                person_id=person_id,
+                persisted_face_id=person_persisted_face_id
+            )
+            user_data = getattr(face_data, 'user_data', None)
             if user_data:
                 user_data_dict = json.loads(user_data)
                 persisted_face_id = user_data_dict.get("persistedFaceId")
 
-                face_list_face_url = f"{self.face_api_url}/largefacelists/{self.large_face_list_id}/persistedfaces/{persisted_face_id}"
-
                 if delete_faces:
                     # Delete the face from the Large Face List
-                    delete_face_list_response = requests.delete(face_list_face_url, headers=self.headers)
-                    if delete_face_list_response.status_code != 200:
-                        print("Failed to delete the face from the Large Face List.")
-                        return False
+                    self.face_admin_client.large_face_list.delete_face(
+                        large_face_list_id=self.large_face_list_id,
+                        persisted_face_id=persisted_face_id
+                    )
                 else:
                     # Update userData for the face in the Large Face List
                     user_data_face_list = {
@@ -216,83 +223,49 @@ class UnifiedFaceCollection:
                         "personPersistedFaceId": None
                     }
                     user_data_face_list_json = json.dumps(user_data_face_list)
-                    update_body_face_list = {
-                        "userData": user_data_face_list_json
-                    }
-                    update_response_face_list = requests.patch(face_list_face_url, headers=self.headers, json=update_body_face_list)
-                    if update_response_face_list.status_code != 200:
-                        print("Failed to update userData for the face in the Large Face List.")
-                        return False
+                    self.face_admin_client.large_face_list.update_face(
+                        self.large_face_list_id,
+                        persisted_face_id,
+                        user_data=user_data_face_list_json
+                    )
 
         # Remove the person from the person group
-        delete_person_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons/{person_id}"
-        delete_person_response = requests.delete(delete_person_url, headers=self.headers)
-
-        if delete_person_response.status_code != 200:
-            return False
+        self.face_admin_client.large_person_group.delete_person(
+            large_person_group_id=self.large_person_group_id,
+            person_id=person_id
+        )
 
         return True
 
-    def create_person(self, person_name):
-        person_group_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons"
-        person_response = requests.post(person_group_url, headers=self.headers, json={"name": person_name})
-        return person_response.json()
-
     def get_person_by_name(self, person_name):
-        persons_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons"
-        persons_response = requests.get(persons_url, headers=self.headers)
-        persons = persons_response.json()
+        persons = self.face_admin_client.large_person_group.get_persons(self.large_person_group_id)
         for person in persons:
-            if person['name'] == person_name:
+            if person.name == person_name:
                 return person
         return None
 
     def train(self):
         # Train the Large Face List
-        face_list_train_url = f"{self.face_api_url}/largefacelists/{self.large_face_list_id}/train"
-        face_list_train_response = requests.post(face_list_train_url, headers=self.headers)
-        
-        if face_list_train_response.status_code != 202:
-            print("Failed to initiate training for Large Face List")
-            return False
+        poller_face_list = self.face_admin_client.large_face_list.begin_train(
+            large_face_list_id=self.large_face_list_id,
+            polling_interval=5,
+        )
+        poller_face_list.wait()
+        print(f"The face list {self.large_face_list_id} is trained successfully.")
 
         # Train the Large Person Group
-        person_group_train_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/train"
-        person_group_train_response = requests.post(person_group_train_url, headers=self.headers)
-        
-        if person_group_train_response.status_code != 202:
-            print("Failed to initiate training for Large Person Group")
-            return False
-
-        # Check training status for Large Face List
-        face_list_status_url = f"{self.face_api_url}/largefacelists/{self.large_face_list_id}/training"
-        while True:
-            face_list_status_response = requests.get(face_list_status_url, headers=self.headers)
-            face_list_status = face_list_status_response.json()
-            if face_list_status['status'] == 'succeeded':
-                break
-            elif face_list_status['status'] == 'failed':
-                print("Large Face List training failed")
-                return False
-            time.sleep(1)
-        
-        # Check training status for Large Person Group
-        person_group_status_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/training"
-        while True:
-            person_group_status_response = requests.get(person_group_status_url, headers=self.headers)
-            person_group_status = person_group_status_response.json()
-            if person_group_status['status'] == 'succeeded':
-                break
-            elif person_group_status['status'] == 'failed':
-                print("Large Person Group training failed")
-                return False
-            time.sleep(1)
+        poller_person_group = self.face_admin_client.large_person_group.begin_train(
+            large_person_group_id=self.large_person_group_id,
+            polling_interval=5,
+        )
+        poller_person_group.wait()
+        print(f"The person group {self.large_person_group_id} is trained successfully.")
         
         return True
 
     def find_face(self, image_path, search_type='face'):
         # Detect face in the image
-        detected_faces = detect_faces(self.subscription_key, self.endpoint, image_path, self.injection_header)
+        detected_faces = self.detect_faces(image_path)
         face_ids = [face['faceId'] for face in detected_faces]
         if not face_ids:
             return []
@@ -300,98 +273,55 @@ class UnifiedFaceCollection:
         normalized_results = []
         if search_type == 'person':
             # Find similar persons in the Large Person Group
-            identify_url = f"{self.face_api_url}/identify"
-            identify_data = {
-                'faceIds': [face_ids[0]],
-                'largePersonGroupId': self.large_person_group_id,
-                'maxNumOfCandidatesReturned': 10,
-            }
-            identify_response = requests.post(identify_url, headers=self.headers, json=identify_data)
-            if identify_response.status_code == 200:
-                results = identify_response.json()
-                for result in results:
-                    for candidate in result.get('candidates', []):
-                        normalized_results.append({
-                            'personId': candidate['personId'],
-                            'confidence': candidate['confidence']
-                        })
-                return normalized_results
-            else:
-                return []
+            identify_results = self.face_client.identify_from_large_person_group(
+                face_ids=[face_ids[0]],
+                large_person_group_id=self.large_person_group_id
+            )
+
+            for result in identify_results:
+                for candidate in result.get('candidates', []):
+                    normalized_results.append({
+                        'personId': candidate.person_id,
+                        'confidence': candidate.confidence
+                    })
+            return normalized_results
         else:
             # Find similar faces in the Large Face List
-            similar_faces_url = f"{self.face_api_url}/findsimilars"
-            similar_faces_data = {
-                'faceId': face_ids[0],
-                'largeFaceListId': self.large_face_list_id,
-                'maxNumOfCandidatesReturned': 10,
-            }
-            similar_faces_response = requests.post(similar_faces_url, headers=self.headers, json=similar_faces_data)
-            if similar_faces_response.status_code == 200:
-                results = similar_faces_response.json()
-                for result in results:
-                    normalized_results.append({
-                        'faceId': result['persistedFaceId'],
-                        'confidence': result['confidence']
-                    })
-                return normalized_results
-            else:
-                return []
+            similar_faces_results = self.face_client.find_similar_from_large_face_list(
+                face_id=face_ids[0],
+                large_face_list_id=self.large_face_list_id
+            )
+            for result in similar_faces_results:
+                normalized_results.append({
+                    'faceId': result.persisted_face_id,
+                    'confidence': result.confidence
+                })
+            return normalized_results
 
     def delete_collection(self):
-        # Delete the Large Face List
-        face_list_url = f"{self.face_api_url}/largefacelists/{self.large_face_list_id}"
-        face_list_response = requests.delete(face_list_url, headers=self.headers)
-        
-        if face_list_response.status_code == 200:
-            print(f"Successfully deleted Large Face List: {self.large_face_list_id}")
-        else:
-            print(f"Failed to delete Large Face List: {face_list_response.json()}")
-        
-        # Delete the Large Person Group
-        person_group_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}"
-        person_group_response = requests.delete(person_group_url, headers=self.headers)
-        
-        if person_group_response.status_code == 200:
-            print(f"Successfully deleted Large Person Group: {self.large_person_group_id}")
-        else:
-            print(f"Failed to delete Large Person Group: {person_group_response.json()}")
-
-        return face_list_response.status_code == 200 and person_group_response.status_code == 200
+        self.face_admin_client.large_face_list.delete(self.large_face_list_id)
+        self.face_admin_client.large_person_group.delete(self.large_person_group_id)
+        return
 
     def list_faces(self):
-        face_list_url = f"{self.face_api_url}/largefacelists/{self.large_face_list_id}/persistedfaces"
         faces = []
-        params = {}
-
-        response = requests.get(face_list_url, headers=self.headers, params=params)
-        if response.status_code == 200:
-            data = response.json()
-            for face in data:
-                faces.append({
-                    'persistedFaceId': face['persistedFaceId'],
-                    'personId': json.loads(face['userData']).get('personId', None)
-                })
-        else:
-            print(f"Failed to list faces: {response.json()}")
+        data = self.face_admin_client.large_face_list.get_faces(self.large_face_list_id)
+        for face in data:
+            faces.append({
+                'persistedFaceId': face.persisted_face_id,
+                'personId': json.loads(face.user_data).get('personId', None)
+            })
 
         return faces
 
     def list_persons(self):
-        persons_url = f"{self.face_api_url}/largepersongroups/{self.large_person_group_id}/persons"
         persons = []
-        params = {}
-
-        response = requests.get(persons_url, headers=self.headers, params=params)
-        if response.status_code == 200:
-            data = response.json()
-            for person in data:
-                persons.append({
-                    'personId': person['personId'],
-                    'name': person['name'],
-                })
-        else:
-            print(f"Failed to list persons: {response.json()}")
+        data = self.face_admin_client.large_person_group.get_persons(self.large_person_group_id)
+        for person in data:
+            persons.append({
+                'personId': person.person_id,
+                'name': person.name,
+            })
 
         return persons
 
