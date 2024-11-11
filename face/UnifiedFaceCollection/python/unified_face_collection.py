@@ -24,10 +24,10 @@ class UnifiedFaceCollection:
         return detected_faces
 
     def enlarge_bounding_box(self, face_rectangle, image_width, image_height, enlargement_factor=1.2):
-        left = max(0, face_rectangle['left'] - (face_rectangle['width'] * (enlargement_factor - 1) / 2))
-        top = max(0, face_rectangle['top'] - (face_rectangle['height'] * (enlargement_factor - 1) / 2))
-        width = min(image_width - left, face_rectangle['width'] * enlargement_factor)
-        height = min(image_height - top, face_rectangle['height'] * enlargement_factor)
+        left = max(0, face_rectangle.left - (face_rectangle.width * (enlargement_factor - 1) / 2))
+        top = max(0, face_rectangle.top - (face_rectangle.height * (enlargement_factor - 1) / 2))
+        width = min(image_width - left, face_rectangle.width * enlargement_factor)
+        height = min(image_height - top, face_rectangle.height * enlargement_factor)
         return {'left': int(left), 'top': int(top), 'width': int(width), 'height': int(height)}
 
     def get_image_dimensions(self, image_path):
@@ -63,12 +63,13 @@ class UnifiedFaceCollection:
         faces = self.detect_faces(image_path)
         target_face = None
         if len(faces) == 0:
-            return "No faces detected in the image."
+            print(f"No faces detected in the image.")
+            return None
         elif len(faces) > 1:
             image_width, image_height = self.get_image_dimensions(image_path)
             print(f"Multiple faces detected. Using the first face (largest face) for adding to the collection.")
-            face_rectangle = self.enlarge_bounding_box(faces[0]['faceRectangle'], image_width, image_height)
-            target_face = [face_rectangle['left'],face_rectangle['top'],face_rectangle['width'], face_rectangle['height']]
+            face_rectangle = self.enlarge_bounding_box(faces[0].face_rectangle, image_width, image_height)
+            target_face = [face_rectangle.left, face_rectangle.top, face_rectangle.width, face_rectangle.height]
         else:
             print(f"One face detected. Adding to the collection.")
         
@@ -79,7 +80,7 @@ class UnifiedFaceCollection:
                 image,
                 target_face=target_face,
                 detection_model=FaceDetectionModel.DETECTION03,
-                user_data=person_name
+                user_data=json.dumps({"personId": None, "personPersistedFaceId": None})
             ).persisted_face_id
 
         if person_name:
@@ -143,10 +144,7 @@ class UnifiedFaceCollection:
             large_face_list_id=self.large_face_list_id,
             persisted_face_id=persisted_face_id
         )
-        user_data = getattr(face_data, 'user_data', None)
-        if not user_data:
-            return False
-
+        user_data = face_data.user_data
         user_data_dict = json.loads(user_data)
         person_id = user_data_dict.get("personId")
         person_persisted_face_id = user_data_dict.get("personPersistedFaceId")
@@ -164,7 +162,7 @@ class UnifiedFaceCollection:
                 large_person_group_id=self.large_person_group_id,
                 person_id=person_id
             )
-            if not person_data.get("persistedFaceIds"):
+            if not person_data.persisted_face_ids:
                 # Delete the person if no faces are left
                 print(f"Deleting the person as no faces are left.")
                 self.face_admin_client.large_person_group.delete_person(
@@ -205,7 +203,7 @@ class UnifiedFaceCollection:
                 person_id=person_id,
                 persisted_face_id=person_persisted_face_id
             )
-            user_data = getattr(face_data, 'user_data', None)
+            user_data = face_data.user_data
             if user_data:
                 user_data_dict = json.loads(user_data)
                 persisted_face_id = user_data_dict.get("persistedFaceId")
@@ -266,7 +264,7 @@ class UnifiedFaceCollection:
     def find_face(self, image_path, search_type='face'):
         # Detect face in the image
         detected_faces = self.detect_faces(image_path)
-        face_ids = [face['faceId'] for face in detected_faces]
+        face_ids = [face.face_id for face in detected_faces]
         if not face_ids:
             return []
 
@@ -279,7 +277,7 @@ class UnifiedFaceCollection:
             )
 
             for result in identify_results:
-                for candidate in result.get('candidates', []):
+                for candidate in result.candidates:
                     normalized_results.append({
                         'personId': candidate.person_id,
                         'confidence': candidate.confidence
