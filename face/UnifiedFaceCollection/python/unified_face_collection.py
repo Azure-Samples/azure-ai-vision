@@ -69,7 +69,7 @@ class UnifiedFaceCollection:
             image_width, image_height = self.get_image_dimensions(image_path)
             print(f"Multiple faces detected. Using the first face (largest face) for adding to the collection.")
             face_rectangle = self.enlarge_bounding_box(faces[0].face_rectangle, image_width, image_height)
-            target_face = [face_rectangle.left, face_rectangle.top, face_rectangle.width, face_rectangle.height]
+            target_face = [face_rectangle['left'],face_rectangle['top'],face_rectangle['width'], face_rectangle['height']]
         else:
             print(f"One face detected. Adding to the collection.")
         

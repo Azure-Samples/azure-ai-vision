@@ -74,7 +74,7 @@ def add_person_face(subscription_key, endpoint, image_path, person_id, injection
         # If multiple faces are detected, use the first face (largest face) for adding to the target
         print(f"Multiple faces detected. Using the first face (largest face) for adding to the target.")
         face_rectangle = enlarge_bounding_box(faces[0].face_rectangle, image_width, image_height)
-        params['targetFace'] = f"{face_rectangle.left},{face_rectangle.top},{face_rectangle.width},{face_rectangle.height}"
+        params['targetFace'] = f"{face_rectangle['left']},{face_rectangle['top']},{face_rectangle['width']},{face_rectangle['height']}"
     else:
         print(f"One face detected. Adding to the target.")
 
