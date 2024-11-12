@@ -21,9 +21,9 @@ MAX_IMAGE_SIZE = 1920
 # JPEG quality
 JPEG_QUALITY = 95
 # Detection model option
-DETECTION_MODEL = FaceDetectionModel.DETECTION_03
+DETECTION_MODEL = FaceDetectionModel.DETECTION03
 # Recognition model option
-RECO_MODEL = FaceRecognitionModel.RECOGNITION_04
+RECO_MODEL = FaceRecognitionModel.RECOGNITION04
 # Face attribute options
 FACE_ATTRIBUTES = [FaceAttributeTypeDetection03.BLUR, FaceAttributeTypeDetection03.HEAD_POSE, FaceAttributeTypeDetection03.MASK, FaceAttributeTypeRecognition04.QUALITY_FOR_RECOGNITION]
 # Margin ratio on face crop

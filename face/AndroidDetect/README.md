@@ -16,7 +16,7 @@ The sample demonstrates how to use Azure Face API to detect and frame faces in a
 ### Prerequisites
 
 * [Android Studio](https://developer.android.com/studio) (API Level 28+)
-* Java SDK `com.azure:azure-ai-vision-face:1.0.0-beta.1` for Gradle
+* Java SDK `com.azure:azure-ai-vision-face:1.0.0-beta.2` for Gradle
 
 
 ### Setup and Build
