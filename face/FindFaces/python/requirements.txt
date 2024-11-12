@@ -2,4 +2,3 @@
 azure-ai-vision-face
 azure-core
 Pillow
-requests
