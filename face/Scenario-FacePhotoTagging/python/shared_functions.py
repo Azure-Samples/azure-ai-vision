@@ -12,18 +12,18 @@ def detect_faces(subscription_key, endpoint, image_path, injection_header=None):
         with open(image_path, 'rb') as image_data:
             detected_faces = face_client.detect(
                     image_content=image_data.read(),
-                    detection_model=FaceDetectionModel.DETECTION_03,
-                    recognition_model=FaceRecognitionModel.RECOGNITION_04,
+                    detection_model=FaceDetectionModel.DETECTION03,
+                    recognition_model=FaceRecognitionModel.RECOGNITION04,
                     return_face_id=True,
                     return_face_attributes=[FaceAttributeTypeRecognition04.QUALITY_FOR_RECOGNITION]
                 )
         return detected_faces
     
 def enlarge_bounding_box(face_rectangle, image_width, image_height, enlargement_factor=1.2):
-    left = max(0, face_rectangle['left'] - (face_rectangle['width'] * (enlargement_factor - 1) / 2))
-    top = max(0, face_rectangle['top'] - (face_rectangle['height'] * (enlargement_factor - 1) / 2))
-    width = min(image_width - left, face_rectangle['width'] * enlargement_factor)
-    height = min(image_height - top, face_rectangle['height'] * enlargement_factor)
+    left = max(0, face_rectangle.left - (face_rectangle.width * (enlargement_factor - 1) / 2))
+    top = max(0, face_rectangle.top - (face_rectangle.height * (enlargement_factor - 1) / 2))
+    width = min(image_width - left, face_rectangle.width * enlargement_factor)
+    height = min(image_height - top, face_rectangle.height * enlargement_factor)
     return {'left': int(left), 'top': int(top), 'width': int(width), 'height': int(height)}
 
 def get_image_dimensions(image_path):
@@ -73,7 +73,7 @@ def add_person_face(subscription_key, endpoint, image_path, person_id, injection
         image_width, image_height = get_image_dimensions(image_path)
         # If multiple faces are detected, use the first face (largest face) for adding to the target
         print(f"Multiple faces detected. Using the first face (largest face) for adding to the target.")
-        face_rectangle = enlarge_bounding_box(faces[0]['faceRectangle'], image_width, image_height)
+        face_rectangle = enlarge_bounding_box(faces[0].face_rectangle, image_width, image_height)
         params['targetFace'] = f"{face_rectangle['left']},{face_rectangle['top']},{face_rectangle['width']},{face_rectangle['height']}"
     else:
         print(f"One face detected. Adding to the target.")

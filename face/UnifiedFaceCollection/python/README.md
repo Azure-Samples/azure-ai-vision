@@ -9,10 +9,6 @@ The Unified Face Collection system is designed to streamline and unify the manag
 | [Example usage](example_usage.ipynb) | Jupyter Notebook providing an overview and usage examples for the Unified Face Collection system.|
 | [Unified face collection](unified_face_collection.py) | Python script defining the `UnifiedFaceCollection` class, which encapsulates the core functionalities for managing face collections using Azure's Face API. |
 
-## Shared Functions
-
-For convenience, commonly used functions across these notebooks are consolidated in [shared_functions.py](shared_functions.py). Download this file before running any of the notebooks.
-
 ## Installation
 Install all Python modules and packages listed in the [requirements.txt](requirements.txt) file using the below command.
 
