@@ -23,7 +23,7 @@ This sample demonstrates how to create and manage face collections, add faces, a
     * Find Faces
         * The input can be an image or face ID
         * If the input is an image: Detect the face in the source image first, then verify if the detected face matches any face/person in a given face collection (large face list or large person group).
-        * If the input is face ID: Verify directly if the person ID matches any face/person in a given face collection (large face list or large person group).
+        * If the input is face ID: Verify directly if the face ID matches any face/person in a given face collection (large face list or large person group).
 * Add a Face to a Face Collection
     * Detect faces in an image.
     * Add the largest detected face to a face collection (large face list or large person group).
